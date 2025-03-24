@@ -39,6 +39,8 @@
 </table>
 
 <div class="button-container">
-    <a href="{% url 'inventory:product_list' %}" class="button">製品一覧に戻る</a>
+    <a href="{% url 'inventory:product_edit' product.product_id %}" class="button">製品を編集</a>
+    <a href="{% url 'inventory:product_delete' product.product_id %}" class="button button-danger">製品を削除</a>
+    <a href="{% url 'inventory:product_list' %}" class="button button-secondary">製品一覧に戻る</a>
 </div>
 {% endblock %}

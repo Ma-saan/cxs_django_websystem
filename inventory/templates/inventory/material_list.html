@@ -5,8 +5,18 @@
 {% block content %}
 <h1>材料一覧</h1>
 
+<div class="action-buttons">
+    <a href="{% url 'inventory:material_create' %}" class="button">新規材料の追加</a>
+</div>
+
 <div class="search-container">
-    <input type="text" id="materialSearch" onkeyup="filterTable()" placeholder="材料を検索...">
+    <form method="get" action="{% url 'inventory:material_list' %}" class="search-form">
+        <input type="text" id="materialSearch" name="search" value="{{ search_query }}" placeholder="材料を検索...">
+        <button type="submit" class="button button-small">検索</button>
+        {% if search_query %}
+        <a href="{% url 'inventory:material_list' %}" class="button button-small button-secondary">クリア</a>
+        {% endif %}
+    </form>
 </div>
 
 <table id="materialTable" class="data-table">
@@ -26,6 +36,7 @@
             <td>{{ material.unit }}</td>
             <td>
                 <a href="{% url 'inventory:material_detail' material.material_id %}" class="button button-small">詳細</a>
+                <a href="{% url 'inventory:material_edit' material.material_id %}" class="button button-small">編集</a>
             </td>
         </tr>
         {% empty %}
@@ -35,28 +46,4 @@
         {% endfor %}
     </tbody>
 </table>
-
-<script>
-function filterTable() {
-    var input, filter, table, tr, td, i, txtValue;
-    input = document.getElementById("materialSearch");
-    filter = input.value.toUpperCase();
-    table = document.getElementById("materialTable");
-    tr = table.getElementsByTagName("tr");
-
-    for (i = 0; i < tr.length; i++) {
-        td1 = tr[i].getElementsByTagName("td")[0];
-        td2 = tr[i].getElementsByTagName("td")[1];
-        if (td1 || td2) {
-            txtValue1 = td1.textContent || td1.innerText;
-            txtValue2 = td2.textContent || td2.innerText;
-            if (txtValue1.toUpperCase().indexOf(filter) > -1 || txtValue2.toUpperCase().indexOf(filter) > -1) {
-                tr[i].style.display = "";
-            } else {
-                tr[i].style.display = "none";
-            }
-        }
-    }
-}
-</script>
 {% endblock %}

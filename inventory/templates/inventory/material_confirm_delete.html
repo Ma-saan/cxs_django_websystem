@@ -1,0 +1,27 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}材料の削除{% endblock %}
+
+{% block content %}
+<h1>材料の削除確認</h1>
+
+<div class="delete-confirmation">
+    <p>以下の材料を削除してもよろしいですか？</p>
+    
+    <div class="detail-card">
+        <h2>{{ material.material_name }}</h2>
+        <p><strong>材料品番:</strong> {{ material.material_id }}</p>
+        <p><strong>単位:</strong> {{ material.unit }}</p>
+    </div>
+    
+    <p class="warning">注意: この材料を削除すると、関連するBOMデータも削除されます。これにより製品の構成情報が失われる可能性があります。</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="button-container">
+            <button type="submit" class="button button-danger">削除する</button>
+            <a href="{% url 'inventory:material_detail' material.material_id %}" class="button button-secondary">キャンセル</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

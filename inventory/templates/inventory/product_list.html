@@ -5,8 +5,30 @@
 {% block content %}
 <h1>製品一覧</h1>
 
-<div class="search-container">
-    <input type="text" id="productSearch" onkeyup="filterTable()" placeholder="製品を検索...">
+<div class="action-buttons">
+    <a href="{% url 'inventory:product_create' %}" class="button">新規製品の追加</a>
+</div>
+
+<div class="filter-container">
+    <div class="search-container">
+        <input type="text" id="productSearch" onkeyup="filterTable()" placeholder="製品を検索...">
+    </div>
+    
+    <div class="line-filter">
+        <label for="lineFilter">生産ライン:</label>
+        <select id="lineFilter" onchange="filterByLine(this.value)">
+            <option value="">全て表示</option>
+            {% for line in production_lines %}
+            <option value="{{ line }}" {% if current_line == line %}selected{% endif %}>{{ line }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="filter-summary">
+    {% if current_line %}
+    <p>生産ライン「{{ current_line }}」で絞り込み中 - <a href="{% url 'inventory:product_list' %}">絞り込みを解除</a></p>
+    {% endif %}
 </div>
 
 <table id="productTable" class="data-table">
@@ -27,6 +49,7 @@
             <td>
                 <a href="{% url 'inventory:product_detail' product.product_id %}" class="button button-small">詳細</a>
                 <a href="{% url 'inventory:product_bom' product.product_id %}" class="button button-small">BOM</a>
+                <a href="{% url 'inventory:product_edit' product.product_id %}" class="button button-small">編集</a>
             </td>
         </tr>
         {% empty %}
@@ -38,6 +61,7 @@
 </table>
 
 <script>
+// テキスト検索によるフィルタリング
 function filterTable() {
     var input, filter, table, tr, td, i, txtValue;
     input = document.getElementById("productSearch");
@@ -58,6 +82,22 @@ function filterTable() {
             }
         }
     }
+}
+
+// ラインでフィルタリング
+function filterByLine(line) {
+    // 現在のURLを取得
+    var currentUrl = new URL(window.location.href);
+    
+    // URLパラメータを設定
+    if (line) {
+        currentUrl.searchParams.set('line', line);
+    } else {
+        currentUrl.searchParams.delete('line');
+    }
+    
+    // 新しいURLに遷移
+    window.location.href = currentUrl.toString();
 }
 </script>
 {% endblock %}

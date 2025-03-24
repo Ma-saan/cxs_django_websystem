@@ -1,0 +1,39 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<form method="post" class="form">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="{{ form.material_id.id_for_label }}">{{ form.material_id.label }}</label>
+        {{ form.material_id }}
+        {% if form.material_id.errors %}
+        <div class="error">{{ form.material_id.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div class="form-group">
+        <label for="{{ form.material_name.id_for_label }}">{{ form.material_name.label }}</label>
+        {{ form.material_name }}
+        {% if form.material_name.errors %}
+        <div class="error">{{ form.material_name.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div class="form-group">
+        <label for="{{ form.unit.id_for_label }}">{{ form.unit.label }}</label>
+        {{ form.unit }}
+        {% if form.unit.errors %}
+        <div class="error">{{ form.unit.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div class="button-container">
+        <button type="submit" class="button">保存</button>
+        <a href="{% url 'inventory:material_list' %}" class="button button-secondary">キャンセル</a>
+    </div>
+</form>
+{% endblock %}

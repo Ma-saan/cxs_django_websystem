@@ -1,0 +1,27 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}製品の削除{% endblock %}
+
+{% block content %}
+<h1>製品の削除確認</h1>
+
+<div class="delete-confirmation">
+    <p>以下の製品を削除してもよろしいですか？</p>
+    
+    <div class="detail-card">
+        <h2>{{ product.product_name }}</h2>
+        <p><strong>製品品番:</strong> {{ product.product_id }}</p>
+        <p><strong>生産ライン:</strong> {{ product.production_line }}</p>
+    </div>
+    
+    <p class="warning">注意: この製品を削除すると、関連するBOMデータも削除されます。</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="button-container">
+            <button type="submit" class="button button-danger">削除する</button>
+            <a href="{% url 'inventory:product_detail' product.product_id %}" class="button button-secondary">キャンセル</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
