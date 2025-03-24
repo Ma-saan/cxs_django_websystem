@@ -1,0 +1,63 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}製品一覧{% endblock %}
+
+{% block content %}
+<h1>製品一覧</h1>
+
+<div class="search-container">
+    <input type="text" id="productSearch" onkeyup="filterTable()" placeholder="製品を検索...">
+</div>
+
+<table id="productTable" class="data-table">
+    <thead>
+        <tr>
+            <th>製品品番</th>
+            <th>製品名</th>
+            <th>生産ライン</th>
+            <th>アクション</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in products %}
+        <tr>
+            <td>{{ product.product_id }}</td>
+            <td>{{ product.product_name }}</td>
+            <td>{{ product.production_line }}</td>
+            <td>
+                <a href="{% url 'inventory:product_detail' product.product_id %}" class="button button-small">詳細</a>
+                <a href="{% url 'inventory:product_bom' product.product_id %}" class="button button-small">BOM</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">製品が登録されていません</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+function filterTable() {
+    var input, filter, table, tr, td, i, txtValue;
+    input = document.getElementById("productSearch");
+    filter = input.value.toUpperCase();
+    table = document.getElementById("productTable");
+    tr = table.getElementsByTagName("tr");
+
+    for (i = 0; i < tr.length; i++) {
+        td1 = tr[i].getElementsByTagName("td")[0];
+        td2 = tr[i].getElementsByTagName("td")[1];
+        if (td1 || td2) {
+            txtValue1 = td1.textContent || td1.innerText;
+            txtValue2 = td2.textContent || td2.innerText;
+            if (txtValue1.toUpperCase().indexOf(filter) > -1 || txtValue2.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}BOM一覧{% endblock %}
+
+{% block content %}
+<h1>BOM一覧</h1>
+
+<div class="search-container">
+    <input type="text" id="bomSearch" onkeyup="filterTable()" placeholder="BOMを検索...">
+</div>
+
+<table id="bomTable" class="data-table">
+    <thead>
+        <tr>
+            <th>関連ID</th>
+            <th>製品品番</th>
+            <th>製品名</th>
+            <th>材料品番</th>
+            <th>材料名</th>
+            <th>数量</th>
+            <th>単位</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in bom_items %}
+        <tr>
+            <td>{{ item.relation_id }}</td>
+            <td>{{ item.product.product_id }}</td>
+            <td>{{ item.product.product_name }}</td>
+            <td>{{ item.material.material_id }}</td>
+            <td>{{ item.material.material_name }}</td>
+            <td>{{ item.quantity_per_unit }}</td>
+            <td>{{ item.unit_type }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7">BOM情報が登録されていません</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+function filterTable() {
+    var input, filter, table, tr, td, i, txtValue;
+    input = document.getElementById("bomSearch");
+    filter = input.value.toUpperCase();
+    table = document.getElementById("bomTable");
+    tr = table.getElementsByTagName("tr");
+
+    for (i = 0; i < tr.length; i++) {
+        var match = false;
+        for (var j = 0; j < 5; j++) {
+            td = tr[i].getElementsByTagName("td")[j];
+            if (td) {
+                txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    match = true;
+                    break;
+                }
+            }
+        }
+        if (match) {
+            tr[i].style.display = "";
+        } else {
+            tr[i].style.display = "none";
+        }
+    }
+}
+</script>
+{% endblock %}

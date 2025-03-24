@@ -1,0 +1,13 @@
+{% extends 'layout.html' %}
+{% block content %}
+<table>
+  <tr><th>品番</th><td>{{ item.item_no }}</td></tr>
+  <tr><th>製品名</th><td>{{ item.item_name }}</td></tr>
+  <tr><th>入数</th><td>{{ item.quantity }}</td></tr>
+  <tr><th>ボトル</th><td>{{ item.bottle }}</td></tr>
+  <tr><th>注意事項</th><td>{{ item.warning }}</td></tr></tr>
+</table>
+<div class="basic-block">
+  <a href="javascript:history.back()"><i id="back_btn" class="fa fa-backward"></i></a>
+</div>
+{% endblock %}

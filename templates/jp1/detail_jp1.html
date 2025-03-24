@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+{% block content %}
+<table>
+  <tr><th>品番</th><td>{{ item.item_no }}</td></tr>
+  <tr><th>製品名</th><td>{{ item.item_name }}</td></tr>
+  <tr><th>入数</th><td>{{ item.quantity }}</td></tr>
+  <tr><th>ボトル</th><td>{{ item.bottle }}</td></tr>
+  <tr><th>注意事項</th><td>{{ item.warning }}</td><td><a href="{% url 'jp1:edit_warning' item.id %}" ><i id="edit_btn" class="fa fa-edit"></i></a></td></tr> 
+</table>
+<br><br>
+<h4>手順書・作業指示書 一覧</h4>
+<ul>
+  {% for pdf in pdf_files %}
+    <li>
+      <!--<a href="{{ pdf.file.url }}">{{ pdf.name }}</a> (更新日: {{ pdf.uploaded_at|date:"Y年n月j日" }})-->
+      <a href="{% url 'jp1:view_pdf' pdf.id %}"><button class="pdf_list_button">{{ pdf.name }}</button></a>
+    </li>
+  {% empty %}
+    <li>手順書が登録されていません。</li>
+  {% endfor %}
+</ul>
+<div class="basic-block">
+  <a href="javascript:history.back()"><i id="back_btn" class="fa fa-backward"></i></a>
+</div>
+{% endblock %}

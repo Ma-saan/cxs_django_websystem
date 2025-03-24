@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload CSV</title>
+</head>
+<body>
+    <h1>Upload CSV File</h1>
+    
+    <!-- エラーメッセージを表示 -->
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+    
+    <!-- 成功メッセージを表示 -->
+    {% if success %}
+        <p style="color: green;">{{ success }}</p>
+    {% endif %}
+    
+    <!-- CSVファイルのアップロードフォーム -->
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="csv_file" accept=".csv">
+        <button type="submit">Upload</button>
+    </form>
+    <br>
+
+    <!-- Schedule List Link -->
+    <a href="{% url 'schedule_view' %}">Go to Schedule List</a>
+
+</body>
+</html>
+

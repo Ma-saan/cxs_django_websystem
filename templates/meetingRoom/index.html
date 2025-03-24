@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% load static %}
+    <meta charset='utf-8' />
+    <link rel="stylesheet" href="{% static 'css/main.min.css' %}">
+    <style>
+        .modal {
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+            line-height: 2.5; /* 行間を広くする */
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #eventDetails {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>シーバイエス掛川工場　会議室予約表</h1>
+    <h3>
+        <font color="#5a993d">会議室1 → 1</font>
+        <font color="#3d6b99">会議室2 → 2</font>
+        <font color="#993d7a">会議室3 → 3</font>
+        <font color="#995c3d">応接室 → 応接室</font>
+        <font color="#9932cc">社用車 → 車</font>
+    </h3>
+    <div id='calendar'></div>
+
+<div id="eventModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-button" id="closeModal">&times;</span>
+        <h2>イベント詳細</h2>
+        <div id="eventDetails"></div>
+        <form id="editEventForm">
+            <div>
+                <label>会議名:</label>
+                <input type="text" id="editEventName" />
+            </div>
+            <div>
+                <label>担当者:</label>
+                <input type="text" id="editPerson" />
+            </div>
+            <div>
+                <label>会議室名:</label>
+                <select id="editRoomName">
+                    <option value="会議室1">会議室1</option>
+                    <option value="会議室2">会議室2</option>
+                    <option value="会議室3">会議室3</option>
+                    <option value="応接室">応接室</option>
+                    <option value="社用車">社用車</option>
+                </select>
+            </div>
+            <div>
+                <label>開始日時:</label>
+                <input type="datetime-local" id="editStartDate" />
+            </div>
+            <div>
+                <label>終了日時:</label>
+                <input type="datetime-local" id="editEndDate" />
+            </div>
+            <button type="button" id="saveEditButton">変更して保存</button>
+            <button type="button" id="deleteEventButton">イベント削除</button>
+            <button type="button" id="cancelButton">キャンセル</button>
+        </form>
+    </div>
+</div>
+
+<script src="{% static 'js/axios.min.js' %}"></script>
+<script src="{% static 'js/main.min.js' %}"></script>
+<script src="{% static 'js/app.js' %}"></script>
+
+</body>
+</html>
+

@@ -1,0 +1,102 @@
+<!-- product_detail.html -->
+{% extends 'layout.html' %}
+
+{% block title %}製品詳細{% endblock %}
+
+{% block content %}
+    <h1>{{ product_schedule.製品名 }} の詳細</h1>
+    <table>
+        <tr><th>オーダー</th><td>{{ product_schedule.id}}</td></tr>
+        <tr><th>品番</th><td>{{ product_schedule.品番 }}</td></tr>
+        <tr><th>生産日</th><td>{{ product_schedule.生産日 }}</td></tr>
+        <tr><th>生産数</th><td>{{ product_schedule.生産数 }}</td></tr>
+    
+
+<!-- JP1製品詳細情報表示 -->
+    {% if product_jp1 != None %}
+        {% if product_jp1.quantity != '0' and product_jp1.quantity != None %}
+            <tr><th>入数</th><td>{{ product_jp1.quantity }}</td></tr>
+        {% endif %}
+        {% if product_jp1.accessories != '0' and product_jp1.accessories != None %}
+            <tr><th>付属品</th><td>{{ product_jp1.accessories }}</td></tr>
+        {% endif %}    
+        {% if product_jp1.duskin != '0' and product_jp1.duskin != None %}
+            <tr><th>注意事項</th><td>{{ product_jp1.duskin }}</td></tr>
+        {% endif %}
+        {% if product_jp1.quasi_drug != '0' and product_jp1.quasi_drug != None %}
+            <tr><th>注意事項</th><td>{{ product_jp1.quasi_drug }}</td></tr>
+        {% endif %}
+        {% if product_jp1.bottle != '0' and product_jp1.bottle != None %}
+            <tr><th>注意事項</th><td>{{ product_jp1.bottle }}</td></tr>
+        {% endif %}
+        {% if product_jp1.warning != '0' and product_jp1.warning != None %}
+            <tr><th>注意事項</th><td>{{ product_jp1.warning }}</td></tr>
+        {% endif %}        
+    {% endif %}
+
+<!-- JP2製品詳細情報表示 --> 
+    {% if product_jp2 != None %} 
+        {% if product_jp2.bottle != '0' and product_jp2.bottle != None %}
+            <tr><th>ボトル</th><td>{{ product_jp2.bottle }}</td></tr>
+        {% endif %}
+        {% if product_jp2.warning != '0' and product_jp2.warning != None %}
+            <tr><th>注意事項</th><td>{{ product_jp2.warning }}</td></tr>
+        {% endif %}
+    {% endif %}
+
+<!-- JP3製品詳細情報表示 --> 
+    {% if product_jp3 != None %} 
+        {% if product_jp3.bottle != '0' and product_jp3.bottle != None %}
+            <tr><th>ボトル</th><td>{{ product_jp3.bottle }}</td></tr>
+        {% endif %}
+        {% if product_jp3.warning != '0' and product_jp3.warning != None %}
+            <tr><th>注意事項</th><td>{{ product_jp3.warning }}</td></tr>
+        {% endif %}
+    {% endif %} 
+
+<!-- JP4製品詳細情報表示 --> 
+    {% if product_jp4 != None %} 
+        {% if product_jp4.cap != '0' and product_jp4.cap != None %}
+            <tr><th>キャップ</th><td>{{ product_jp4.cap }}</td></tr>
+        {% endif %}
+        {% if product_jp4.warning != '0' and product_jp4.warning != None %}
+            <tr><th>注意事項</th><td>{{ product_jp4.warning }}</td></tr>
+        {% endif %}
+    {% endif %} 
+
+<!-- JP6A製品詳細情報表示 --> 
+    {% if product_jp6a != None %} 
+        {% if product_jp6a.bottle != '0' and product_jp6a.bottle != None  %}
+            <tr><th>ボトル</th><td>{{ product_jp6a.bottle }}</td></tr>
+        {% endif %}
+        {% if product_jp6a.warning != '0' and product_jp6a.warning != None %}
+            <tr><th>注意事項</th><td>{{ product_jp6a.warning }}</td></tr>
+        {% endif %}
+    {% endif %}    
+
+<!-- JP6B製品詳細情報表示 --> 
+    {% if product_jp6b != None %} 
+        {% if product_jp6b.bottle != '0' and product_jp6b.bottle != None %}
+            <tr><th>ボトル</th><td>{{ product_jp6b.bottle }}</td></tr>
+        {% endif %}
+        {% if product_jp6b.warning != '0' and product_jp6b.warning != None %}
+            <tr><th>注意事項</th><td>{{ product_jp6b.warning }}</td></tr>
+        {% endif %}
+    {% endif %} 
+    
+<!-- JP7製品詳細情報表示 --> 
+    {% if product_jp7 != None %} 
+        {% if product_jp7.seal != '0' and product_jp7.seal != None %}
+            <tr><th>封印</th><td>{{ product_jp7.seal }}</td></tr>
+        {% endif %}
+        {% if product_jp7.warning != '0' and product_jp7.warning != None and product_jp7.warning != 0 %}
+            <tr><th>注意事項</th><td>{{ product_jp7.warning }}</td></tr>
+        {% endif %}
+    {% endif %}
+    </table>
+    <div class="link-container"></div>
+        <a href="{% url 'schedule:redirect_to_detail' item_no=product_schedule.品番 %}">この製品の詳細</a>
+        <br>
+        <a href="javascript:history.back()"><i id="back_btn" class="fa fa-backward"></i></a>
+    </div>
+    {% endblock %}

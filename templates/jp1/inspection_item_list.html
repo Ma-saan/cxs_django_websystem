@@ -1,0 +1,13 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>JP1点検履歴確認</h2>
+{% for item in items %}
+    <div class="button_container">
+        <form action="{% url 'jp1:inspection_date_list' item.id %}" method="get">
+            <button type="submit" class="inspection_button">{{ item.name }}</button>
+        </form>
+        <span class="equipment-name">{{ item.equipment_name }}</span>
+    </div>
+{% endfor %}
+<a href="javascript:history.back()"><i id="back_btn" class="fa fa-backward"></i></a>
+{% endblock %}

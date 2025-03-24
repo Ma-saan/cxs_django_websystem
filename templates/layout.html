@@ -1,0 +1,297 @@
+<!-- layout.html -->
+<!DOCTYPE html>
+{% load static %}
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <!-- jQueryとjQuery UI,fullcalenderの読み込み -->
+    <script src="{% static 'js/jquery.js' %}"></script>
+    <script src="{% static 'js/jquery-ui.js' %}"></script>
+    <script src="{% static 'js/axios.min.js' %}"></script>
+    <script src="{% static 'js/main.min.js' %}"></script>
+    <script src="{% static 'js/app.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'css/jquery-ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/fontawesome.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.min.css' %}">
+    <script>
+        function formatDate(date) {
+            var day = date.getDate();
+            var month = date.getMonth() + 1;  // 1を加える
+            var year = date.getFullYear() % 100; // 2桁にするため
+            // 1桁の場合は0埋め
+            day = day < 10 ? '0' + day : '' + day;
+            month = month < 10 ? '0' + month : '' + month;
+            year = year < 10 ? '0' + year : '' + year;
+            return year + month + day;
+        }
+        $(function() {
+            // メニューバーのカレンダーのオプション
+            $(".menu-datepicker").datepicker({
+                dateFormat: 'yymmdd',  // 日付のフォーマットは依然として適当なものに設定
+                onSelect: function(dateText, inst) {
+                    var selectedDate = $(this).datepicker('getDate');
+                    var formattedDate = formatDate(selectedDate);
+                    window.location.href = "/schedule/" + formattedDate;
+                },
+                beforeShow: function(input, inst) {
+                    // タッチデバイスであれば、カレンダーウィジェットをポップアップ表示
+                    if ('ontouchstart' in window) {
+                        setTimeout(function() {
+                            inst.dpDiv.css({
+                                position: 'absolute',
+                                display: 'block',
+                                top: $(input).offset().top + $(input).outerHeight(),
+                                left: $(input).offset().left
+                            });
+                        }, 500);    
+                    }
+                }  
+            });
+        // 日本語化
+        $.datepicker.regional['ja'] = {
+        closeText: '閉じる',
+        prevText: '<前',
+        nextText: '次>',
+        currentText: '今日',
+        monthNames: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+        monthNamesShort: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+        dayNames: ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'],
+        dayNamesShort: ['日','月','火','水','木','金','土'],
+        dayNamesMin: ['日','月','火','水','木','金','土'],
+        weekHeader: '週',
+        dateFormat: 'yy/mm/dd',
+        firstDay: 0,
+        isRTL: false,
+        showMonthAfterYear: true,
+        yearSuffix: '年'};
+        $.datepicker.setDefaults($.datepicker.regional['ja']);
+        });
+        $(document).ready(function() {
+            $("#sidebar-menu").addClass("date-and-button");
+            $("#trigger-icon").on("click", function() {
+                $("#sidebar-menu").toggleClass("active");
+                $(".content-block").toggleClass("shifted");
+                // FontAwesomeアイコンの切り替え
+                if ($(this).hasClass("fa fa-bars")) {
+                    $(this).removeClass("fa fa-bars").addClass("far fa-circle-xmark");
+                } else {
+                    $(this).removeClass("far fa-circle-xmark").addClass("fa fa-bars");
+                }
+                if ($("#sidebar-menu").hasClass("active")) {
+                    // 今日の日付を取得
+                    var today = new Date();
+                    var year = today.getFullYear() %100;
+                    var month = today.getMonth() + 1; // 月は0から始まるので1を加える
+                    var day = today.getDate();
+                    // 日付を "yymmdd" の形式でフォーマット
+                    var formattedDate = (year < 10 ? '0' : '') + year + 
+                                        (month < 10 ? '0' : '') + month + 
+                                        (day < 10 ? '0' : '') + day;
+                    var currentDate = year + '年' + (month < 10 ? '0' : '') + month + '月' + day + '日';                   
+                    // 取得した日付に基づいて処理を行う（例: `schedule_data`の取得）
+                    $.ajax({
+                        url: "/schedule/get_schedule_data/",
+                        data: {
+                            date: formattedDate
+                        },
+                        success: function(data) {
+                            // `schedule_data`をサイドバーに表示
+                            renderSidebarContent(data, currentDate);
+                            // 次へボタンがクリックされた時の処理
+
+                        }
+                    });  
+                }                            
+            });
+            $("#sidebar-menu").on("click", "#nextButton", function() {
+                // 現在表示されている日付から日付部分のみを取得して年月日の形式に変換
+                var currentDateElement = $("#sidebar-menu .date-and-button p").text();
+                var currentDate = currentDateElement.split('生産日: ')[1]; // "生産日: "を除去して日付のみを取得
+                var year = currentDate.slice(0, 2); // 年を取得
+                var month = currentDate.slice(3, 5); // 月を取得
+                var day = currentDate.slice(6, 8); // 日を取得
+                var formattedDate = year + month + day; // 年月日を連結して2桁の数字にする
+                // 現在表示されている日付から次の日付を計算
+                var currentDate = calculateNextDate(currentDate);
+                var parts = currentDate.split('年');
+                var year = parseInt(parts[0]);
+                parts = parts[1].split('月');
+                var month = parseInt(parts[0]);
+                parts = parts[1].split('日');
+                var day = parseInt(parts[0]);
+                // 年、月、日を2桁の数字に変換して結合
+                var nextDate = year.toString().slice(-2) +
+                    (month < 10 ? '0' : '') + month +
+                    (day < 10 ? '0' : '') + day;
+                // サーバーに次の日付を送信してデータを取得
+                $.ajax({
+                    url: "/schedule/get_schedule_data/",
+                    data: {
+                        date: nextDate
+                        },
+                    success: function(data) {
+                    // 取得したデータをサイドバーに表示
+                    renderSidebarContent(data, currentDate);
+                    }
+                });
+            });
+            $("#sidebar-menu").on("click", "#backButton", function() {
+                // 現在表示されている日付から日付部分のみを取得して年月日の形式に変換
+                var currentDateElement = $("#sidebar-menu .date-and-button p").text();
+                var currentDate = currentDateElement.split('生産日: ')[1]; // "生産日: "を除去して日付のみを取得
+                var year = currentDate.slice(0, 2); // 年を取得
+                var month = currentDate.slice(3, 5); // 月を取得
+                var day = currentDate.slice(6, 8); // 日を取得
+                var formattedDate = year + month + day; // 年月日を連結して2桁の数字にする
+                // 現在表示されている日付から次の日付を計算
+                var currentDate = calculateBackDate(currentDate);
+                var parts = currentDate.split('年');
+                var year = parseInt(parts[0]);
+                parts = parts[1].split('月');
+                var month = parseInt(parts[0]);
+                parts = parts[1].split('日');
+                var day = parseInt(parts[0]);
+                // 年、月、日を2桁の数字に変換して結合
+                var nextDate = year.toString().slice(-2) +
+                    (month < 10 ? '0' : '') + month +
+                    (day < 10 ? '0' : '') + day;
+                // サーバーに次の日付を送信してデータを取得
+                $.ajax({
+                    url: "/schedule/get_schedule_data/",
+                    data: {
+                        date: nextDate
+                        },
+                    success: function(data) {
+                    // 取得したデータをサイドバーに表示
+                    renderSidebarContent(data, currentDate);
+                    }
+                });
+            });
+        });
+    function renderSidebarContent(data, currentDate) {
+        // サイドバーの内容をクリア
+        $("#sidebar-menu").empty();
+        // 生産日を含む親要素を作成し、次へボタンと一緒に追加する
+        var container = $('<div class="date-and-button"></div>');
+        var backButton = '<span id="backButton" class="fa fa-angles-left"></span>';
+        container.append(backButton);
+        // 生産日を追加
+        var dateElement = '<p>生産日: ' + currentDate + '</p>';
+        container.append(dateElement);        
+        // 次へボタンを追加
+        var nextButton = '<span id="nextButton" class="fa fa-angles-right"></span>';
+        container.append(nextButton);
+        // 生産日と次へボタンをサイドバーに追加            
+        $("#sidebar-menu").append(container);
+        // データをサイドバーに追加する前にリストにまとめる
+        var productList = [];
+        for (var row in data) {
+            if (row === 'columns') continue; // 'columns'キーはスキップ
+            for (var col in data[row]) {
+                var product = data[row][col];
+                // rowとcolの情報を付与してリストに追加
+                product.row = parseInt(row);
+                product.col = parseInt(col);
+                productList.push(product);
+            }
+        }
+        // `product.col` の小さい順、同じ値だった場合は `product.row` の小さい順にソート
+        productList.sort(function(a, b) {
+            if (a.col === b.col) {
+                return a.row - b.row;
+            }
+            return a.col - b.col;
+        });
+        // ソートされたデータをサイドバーに追加
+        var currentCol = null; // 現在の col の値を追跡
+        for (var i = 0; i < productList.length; i++) {
+            var product = productList[i];
+            // `specified_date3` を `/` を除去して `yymmdd` 形式に変換
+            var specifiedDate3 = product.specified_date3.replace(/\//g, '');
+            // リンクのURLを生成
+            var linkUrl = '/schedule/product_detail/' + specifiedDate3 + '/' + product.product_number;
+            // `col` が変わるタイミングで文字を挿入
+            if (currentCol !== product.col) {
+                currentCol = product.col;
+                // `col` が変わる場合に挿入したい文字
+                var colHeader = '<p class="col-header">--------------------------------</p>';
+                $("#sidebar-menu").append(colHeader);
+            }
+
+            // コンテンツを生成してサイドバーに追加
+            var content = '<a href="' + linkUrl + '">' + product.product_name + '</a><br>';
+            $("#sidebar-menu").append(content);
+        }
+    }
+    function calculateNextDate(currentDate) {
+        // 日付を分解して年、月、日に分ける
+        var parts = currentDate.split('年');
+        var year = parseInt(parts[0]);
+        parts = parts[1].split('月');
+        var month = parseInt(parts[0]) - 1; // 0-indexed にするため 1 減算
+        parts = parts[1].split('日');
+        var day = parseInt(parts[0]);
+        // JavaScriptのDateオブジェクトを利用して日付を操作
+        var nextDateObj = new Date(year, month, day);
+        nextDateObj.setDate(nextDateObj.getDate() + 1); // 1日進める
+        // 形式を整えて返す
+        var nextYear = nextDateObj.getFullYear().toString().slice(-2);
+        var nextMonth = (nextDateObj.getMonth() + 1).toString().padStart(2, '0');
+        var nextDay = nextDateObj.getDate().toString().padStart(2, '0');
+        return nextYear+ '年' +  nextMonth + '月' + nextDay + '日';
+    }
+    function calculateBackDate(currentDate) {
+        // 日付を分解して年、月、日に分ける
+        var parts = currentDate.split('年');
+        var year = parseInt(parts[0]);
+        parts = parts[1].split('月');
+        var month = parseInt(parts[0]) - 1; // 0-indexed にするため 1 減算
+        parts = parts[1].split('日');
+        var day = parseInt(parts[0]);
+        // JavaScriptのDateオブジェクトを利用して日付を操作
+        var backDateObj = new Date(year, month, day);
+        backDateObj.setDate(backDateObj.getDate() - 1); // 1日戻す
+        // 形式を整えて返す
+        var backYear = backDateObj.getFullYear().toString().slice(-2);
+        var backMonth = (backDateObj.getMonth() + 1).toString().padStart(2, '0');
+        var backDay = backDateObj.getDate().toString().padStart(2, '0');
+        return backYear+ '年' +  backMonth + '月' + backDay + '日';
+    }         
+    </script>
+</head>
+<body>
+    <div class="header-block">
+        CXS 掛川工場
+    </div>
+    <div class="menu-block">
+        <a href="/fi/">Home</a>/
+        <a href="/jp1/">JP1</a> /
+        <a href="/jp2/">JP2</a> /
+        <a href="/jp3/">JP3</a> /
+        <a href="/jp4/">JP4</a> /
+        <a href="/jp6a/">JP6A</a> /
+        <a href="/jp6b/">JP6B</a> /
+        <a href="/jp7/">JP7</a> /
+        <a href="/fi/etc/">etc</a> /
+        <a href="/fi/all/">ALL</a> /
+        <input type="text" id="date_id" size="4" class="menu-datepicker" placeholder="生産予定" readonly=”readonly”>
+        <span id="trigger-icon" class="fa fa-bars fa-2x"></span>
+    </div>
+    <article>
+        <div class="content-with-sidebar">
+            <div class="content-block">
+            <!-- メニューバー -->
+                <div id="sidebar-menu" class="scrollable-sidebar">
+                    <!-- メニュー項目 -->
+                    <div id="sidebar-content"></div>
+                </div>     
+                <h1>{{ title }}</h1>                
+                {% block content %}{% endblock %} 
+            </div>                  
+        </div>
+    </article>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h4>各ラインの情報</h4>
+<a href="/jp1/" class="btn_home"><button>JP1</button></a>
+<a href="/jp2/" class="btn_home"><button>JP2</button></a>
+<a href="/jp3/" class="btn_home"><button>JP3</button></a>
+<a href="/jp4/" class="btn_home"><button>JP4</button></a>
+<a href="/jp6a/" class="btn_home"><button>JP6A</button></a>
+<a href="/jp6b/" class="btn_home"><button>JP6B</button></a>
+<a href="/jp7/" class="btn_home"><button>JP7</button></a>
+<a href="/fi/etc/" class="btn_home"><button>etc</button></a>
+<a href="/fi/all/" class="btn_home"><button>全体</button></a>
+<h4>各種手順書</h4>
+<a href="/fi/pdf_list/" class="btn_home"><button>手順書</button></a>
+<h4>他部署リンク</h4>
+<a href="/mr/" class="btn_home"><button>会議室予約</button></a>
+<h4>以下大平作成中</h4>
+<a href="/inventory/" class="btn_home">
+    <button>
+        製品・材料・BOM管理
+    </button>
+</a>
+<h4>Schedule App</h4>
+<a href="{% url 'upload_view' %}">Upload Page</a>
+{% endblock %}

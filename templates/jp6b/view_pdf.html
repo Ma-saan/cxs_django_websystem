@@ -1,0 +1,39 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block content %}
+    <h2>{{ pdf_file.name }}</h2>
+    <div id="pdf-container">
+        <!-- PDFを表示するためのコンテナ -->
+    </div>
+    <a href="javascript:history.back()"><i id="back_btn" class="fa fa-backward"></i></a>
+    <script type="module">
+        // Djangoのstaticタグを使ってPDF.jsライブラリのURLを取得
+        const pdfjsLibUrl = "{% static 'js/pdf.mjs' %}";
+        const pdfjsWorkerLibUrl = "{% static 'js/pdf.worker.mjs' %}";
+        // PDF.jsライブラリを動的にインポート
+        import(pdfjsLibUrl).then(async (pdfjsLib) => {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerLibUrl;
+            // PDFファイルをロードして表示する関数
+            async function loadPDF(url) {
+                const pdf = await pdfjsLib.getDocument(url).promise;
+                const page = await pdf.getPage(1);
+                const scale = 1.2;
+                const viewport = page.getViewport({ scale: scale });
+
+                // Canvasを作成してPDFを描画
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                document.getElementById('pdf-container').appendChild(canvas);
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
+            }
+
+            // PDFファイルのURL
+            const pdfUrl = '{{ pdf_file.file.url }}';
+
+            // PDFをロードして表示
+            loadPDF(pdfUrl);
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>{{ item.name }} 実施日履歴</h2>
+<ul>
+    {% for date, manager_confirmation_date in dates_with_manager_confirmation %}
+        <li>点検日：{{ date|date:"Y年n月j日" }}
+            {% if manager_confirmation_date %}
+                （課長確認日：{{ manager_confirmation_date|date:"Y年n月j日" }}）
+            {% else %}
+                （課長未確認）
+            {% endif %}
+        </li>
+    {% endfor %}
+    <a href="javascript:history.back()"><i id="back_btn" class="fa fa-backward"></i></a>
+</ul>     
+{% endblock %}

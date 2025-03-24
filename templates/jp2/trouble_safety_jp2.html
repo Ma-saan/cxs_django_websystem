@@ -1,0 +1,37 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+{% if searchform %}
+  <form action='{% url "jp2:trouble_safety_jp2" %}' method="get">
+    <div>
+      {{ searchform }}
+      <button type="submit" class="search-button"><i class="fa fa-search search-icon"></i></button>
+      <a href='{% url "jp2:trouble_safety_jp2" %}'><i class="fa fa-solid fa-eraser"></i></a>
+    </div>
+  </form>
+{% endif %}
+
+<table>
+    <thead>
+      <tr>
+        <th>発生日</th>
+        <th>トラブル内容</th>
+        <th>対策</th>
+      </tr>
+    </thead>
+    <tbody>
+        {% if trouble_safety %}
+            {% for jp2safe in trouble_safety %}
+                <tr>
+                    <td>{{ jp2safe.発生日|date:"Y年n月" }}</td>
+                    <td>{{ jp2safe.トラブル内容 }}</td>
+                    <td>{{ jp2safe.対策 }}</td>
+                </tr>            
+            {% endfor %}
+        {% endif %}
+    </tbody>
+</table>
+<div class="basic-block">
+  <a href="javascript:history.back()"><i id="back_btn" class="fa fa-backward"></i></a>
+</div>        
+{% endblock %}

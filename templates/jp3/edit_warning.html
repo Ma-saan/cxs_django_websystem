@@ -1,0 +1,27 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container">
+    <h2>製品の注意事項を編集</h2>
+    <form method="post">
+        {% csrf_token %}
+        <table class="table">
+            <tr>
+                <th>品番:</th>
+                <td><input type="text" name="item_no" value="{{ form.instance.item_no }}" readonly class="form-control" ></td>
+            </tr>
+            <tr>
+                <th>製品名:</th>
+                <td><input type="text" name="item_name" value="{{ form.instance.item_name }}" readonly class="form-control"></td>
+            </tr>
+            <tr>
+                <th>注意事項:</th>
+                <td>{{ form.warning }}</td>
+            </tr>
+        </table>
+        <button type="submit" class="bulk-save-btn">保存</button>
+    </form>
+    <div class="mt-3">
+        <a href="javascript:history.back()"><i id="back_btn" class="fa fa-backward"></i></a>
+    </div>
+</div>
+{% endblock %}

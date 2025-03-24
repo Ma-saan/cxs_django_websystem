@@ -1,0 +1,60 @@
+{% extends 'layout.html' %}
+{% load custom_filters %}
+{% block content %}
+<h2>JP6B保守点検実施確認</h2>
+<table border="1">
+    <thead>
+        <tr>
+            <th>機器名</th>
+            <th>点検項目</th>
+            <th>点検頻度</th>
+            <th>点検日時</th>
+            <th>課長確認日時</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+            <tr>
+                <td>{{ item.equipment_name }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.inspection_frequency }}</td>
+                <td>{% if latest_inspection_dates|get_item:item.id %}{{ latest_inspection_dates|get_item:item.id|date:"Y年n月j日" }}{% else %}未点検{% endif %}</td>
+                <td>{% if latest_manager_confirmation_dates|get_item:item.id %}{{ latest_manager_confirmation_dates|get_item:item.id|date:"Y年n月j日" }}{% else %}未確認{% endif %}</td> <!-- 新たに追加 -->
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href="javascript:history.back()"><i id="back_btn" class="fa fa-backward"></i></a>
+<button id="bulk-save-btn" class="bulk-save-btn">課長確認</button>
+<form id="csrf-form" method="post">
+    {% csrf_token %}
+</form>
+<script>
+document.getElementById('bulk-save-btn').addEventListener('click', function() {
+    var formData = new FormData();
+    var now = new Date();
+    var datetime = now.toISOString();  // 現在の日時をISO形式の文字列に変換
+
+    formData.append('checked_datetime', datetime);  // 現在の日時を送信
+
+    fetch('/jp6b/inspection_history/save_manager_confirmation/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('#csrf-form input[name="csrfmiddlewaretoken"]').value
+            }   
+    }).then(function(response) {
+        if (response.ok) {
+            alert('課長確認が保存されました。');
+        } else {
+            alert('保存中にエラーが発生しました。');
+        }
+    }).catch(function(error) {
+        console.error('保存中にエラーが発生しました:', error);
+        alert('保存中にエラーが発生しました。');
+    });
+});
+
+</script>
+{% endblock %}
+

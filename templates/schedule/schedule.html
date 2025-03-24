@@ -1,0 +1,66 @@
+{% extends 'layout.html' %}
+{% load my_filters %}
+
+{% block title %}生産予定{% endblock %}
+
+{% block content %}
+        <h1> {{ specified_date2 }} 生産予定</h1>
+        <table id="schedule-table"></table> 
+
+<script>
+$(function () {
+    var scheduleData = {{ schedule_data_json|safe }};
+    var specifiedDate3 = '{{ specified_date3|escapejs }}';
+    console.log(specifiedDate3);
+    generateScheduleTable(scheduleData);
+
+    function generateScheduleTable(data) {
+        var table = $("#schedule-table");
+        var headerRow = $("<tr></tr>");
+        for (var col = 1; col <= 8; col++) {
+            var colName = getColumnName(col);
+            headerRow.append("<th>" + colName + "</th>");
+        }
+        table.append(headerRow);
+
+        Object.keys(data).forEach(function(row) {
+            var rowData = data[row];
+            if (!rowData) {
+                return; // 無効な行データはスキップ
+            }
+            var dataRow = $("<tr></tr>");
+            for (var col = 0; col < 8; col++) {
+                var cellData = rowData[col.toString()] || {"product_name": "", "color": "#ffffff", "product_number": "", "specified_date3":""};
+                var productName = cellData.product_name !== undefined ? cellData.product_name : ""; // undefinedの場合は空文字を表示
+                var cell = $("<td style='background-color: " + cellData.color + "' data-product-number='" + cellData.product_number + "' data-specified-date3='" + cellData.specified_date3 + "'>" + productName + "</td>");
+                dataRow.append(cell);
+            }
+            table.append(dataRow);
+        });
+
+        table.on("click", "td", function () {
+            var productNumber = $(this).data("product-number");
+            var specifiedDate = $(this).data("specifiedDate3");
+            if (productNumber && specifiedDate && $(this).text().trim() !== "") {
+                var formattedDate = specifiedDate.replace(/\//g, '');
+                window.location.href = "/schedule/product_detail/" + formattedDate + "/" + productNumber;
+            }
+        });
+    }
+
+    function getColumnName(col) {
+        switch(col) {
+            case 1: return "JP1";
+            case 2: return "JP2A";
+            case 3: return "JP2BC";
+            case 4: return "JP3";
+            case 5: return "JP4";
+            case 6: return "JP6AB";
+            case 7: return "JP7A";
+            case 8: return "JP7BC";
+            default: return "";
+        }
+    }
+});
+</script>
+{% endblock %}

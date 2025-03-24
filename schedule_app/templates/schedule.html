@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Schedule</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; /* Distribute column width evenly */
+        }
+        thead {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        tbody {
+            display: block;
+            max-height: 600px; /* Limit height */
+            overflow-y: auto;
+        }
+        tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed; /* Distribute column width evenly */
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+            word-wrap: break-word; /* Allow line breaks */
+        }
+        th:first-child, td:first-child {
+            width: 25px; /* Fix width for ID column */
+        }
+        th:nth-child(2), td:nth-child(2) {
+            width: 100px; /* Fix width for Order Number column */
+        }
+    </style>
+</head>
+<body>
+    <h1>Schedule</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label for="date-filter">Select Date:</label>
+        <input type="date" id="date-filter" name="date-filter" onchange="filterByDate()">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Order Number</th>
+                    <th>Product Name</th>
+                    <th>Product Number</th>
+                    <th>Production Date</th>
+                    <th>Production Quantity</th>
+                    <th>Work Center Name</th>
+                    <th>Work Center Number</th>
+                </tr>
+            </thead>
+            <tbody id="schedule-body">
+                {% for row in schedule_data %}
+                <tr>
+                    <td><input type="checkbox" name="selected_rows" value="{{ row.id }}"></td>
+                    <td>{{ row.order_number }}</td>
+                    <td>{{ row.product_name }}</td>
+                    <td>{{ row.product_number }}</td>
+                    <td>{{ row.production_date }}</td>
+                    <td>{{ row.production_quantity }}</td>
+                    <td>{{ row.work_center_name }}</td>
+                    <td>{{ row.work_center_number }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <input type="submit" name="delete" value="Delete">
+    </form>
+
+    <script>
+        function filterByDate() {
+            const filterDate = document.getElementById('date-filter').value;
+            const formattedFilterDate = formatDate(filterDate);
+            console.log('Selected Date:', formattedFilterDate); // Debugging log
+            const rows = document.querySelectorAll('#schedule-body tr');
+            rows.forEach(row => {
+                const productionDate = row.cells[4].textContent.trim();
+                console.log('Production Date:', productionDate); // Debugging log
+                if (productionDate === formattedFilterDate) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function formatDate(date) {
+            const [year, month, day] = date.split('-');
+            return `${year.slice(-2)}/${month}/${day}`;
+        }
+    </script>
+</body>
+</html>

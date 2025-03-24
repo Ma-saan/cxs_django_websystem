@@ -1,0 +1,39 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+{% if searchform %}
+  <form action='{% url "jp6b:list_jp6b" %}' method="get">
+    <div>
+      {{ searchform }}
+      <button type="submit" class="search-button"><i class="fa fa-search search-icon"></i></button>
+      <a href='{% url "jp6b:list_jp6b" %}'><i class="fa fa-solid fa-eraser"></i></a>
+    </div>
+  </form>
+{% endif %}
+
+<table>
+    <thead>
+      <tr>
+        <th>品番</th>
+        <th>製品名</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if jp6bs %}
+        {% for jp6b in jp6bs %}
+          <tr>
+            <td><a href="/jp6b/{{ jp6b.item_no }}">{{ jp6b.item_no }}</a></td>
+            <td>{{ jp6b.item_name }}</td>
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan=4>No jp6bs.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+</table>
+<div class="basic-block">
+  <a href="javascript:history.back()"><i id="back_btn" class="fa fa-backward"></i></a>
+</div>
+{% endblock%}

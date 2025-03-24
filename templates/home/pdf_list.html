@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>ファイル一覧</h2>
+<ul>
+    {% for pdf_file in pdf_files %}
+        <li><a href="{% url 'home:view_pdf' pdf_file.id %}"><button class="pdf_list_button">{{ pdf_file.name }}</button></a></li>
+    {% endfor %}
+    <a href="javascript:history.back()"><i id="back_btn" class="fa fa-backward"></i></a>
+</ul>
+{% endblock %}

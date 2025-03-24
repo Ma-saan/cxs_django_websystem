@@ -1,0 +1,27 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}ホーム{% endblock %}
+
+{% block content %}
+<h1>在庫管理システム</h1>
+
+<div class="dashboard">
+    <div class="dashboard-item">
+        <h2>製品</h2>
+        <p class="count">{{ product_count }}</p>
+        <a href="{% url 'inventory:product_list' %}" class="button">製品一覧を見る</a>
+    </div>
+    
+    <div class="dashboard-item">
+        <h2>材料</h2>
+        <p class="count">{{ material_count }}</p>
+        <a href="{% url 'inventory:material_list' %}" class="button">材料一覧を見る</a>
+    </div>
+    
+    <div class="dashboard-item">
+        <h2>BOM</h2>
+        <p class="count">{{ bom_count }}</p>
+        <a href="{% url 'inventory:bom_list' %}" class="button">BOM一覧を見る</a>
+    </div>
+</div>
+{% endblock %}

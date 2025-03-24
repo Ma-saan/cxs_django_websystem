@@ -1,0 +1,132 @@
+{% extends 'layout.html' %}
+
+{% load schedule_app_extras %}
+
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h1>作業ライン割り当て</h1>
+    
+    <!-- 日付選択 -->
+    <form method="get" class="mb-4">
+        <div class="form-group">
+            <label for="date">日付選択:</label>
+            <input type="date" id="date" name="date" value="{{ selected_date }}" class="form-control">
+            <button type="submit" class="btn btn-primary mt-2">表示</button>
+        </div>
+    </form>
+    
+    <div class="row">
+        <!-- 未割り当て予定 -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">未割り当て予定</div>
+                <div class="card-body">
+                    <ul id="unassigned-items" class="list-group sortable-list">
+                        {% for schedule in unassigned_schedules %}
+                        <li class="list-group-item sortable-item" data-id="{{ schedule.id }}">
+                            <strong>{{ schedule.product_name }}</strong>
+                            <p>{{ schedule.production_quantity }} - {{ schedule.work_center_name }}</p>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item">未割り当ての予定はありません</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ライン別割り当て -->
+        <div class="col-md-8">
+            <div class="row">
+                {% for line in lines %}
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">{{ line }}</div>
+                        <div class="card-body">
+                            <ul id="line-{{ line|slugify }}" class="list-group sortable-list" data-line="{{ line }}">
+                                {% for assignment in line_assignments|get_item:line %}
+                                <li class="list-group-item sortable-item" data-id="{{ assignment.schedule.id }}">
+                                    <strong>{{ assignment.schedule.product_name }}</strong>
+                                    <p>{{ assignment.schedule.production_quantity }} - {{ assignment.schedule.work_center_name }}</p>
+                                    <small>順番: {{ assignment.sequence_number }}</small>
+                                </li>
+                                {% empty %}
+                                <li class="list-group-item">割り当てがありません</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // すべてのsortableリストに対して初期化
+    document.querySelectorAll('.sortable-list').forEach(function(el) {
+        new Sortable(el, {
+            group: 'shared',
+            animation: 150,
+            onEnd: function(evt) {
+                // ドロップ先とドロップ元の情報を取得
+                var itemId = evt.item.getAttribute('data-id');
+                var newList = evt.to;
+                var newLine = newList.getAttribute('data-line');
+                var newSequence = Array.from(newList.children).indexOf(evt.item) + 1;
+                var date = document.getElementById('date').value;
+                
+                // APIにデータを送信
+                fetch('/schedule_app/update-assignment/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        schedule_id: itemId,
+                        line: newLine,
+                        sequence: newSequence,
+                        date: date
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('割り当て更新成功');
+                    } else {
+                        console.error('エラー:', data.message);
+                        alert('更新に失敗しました: ' + data.message);
+                    }
+                });
+            }
+        });
+    });
+    
+    // CSRFトークン取得関数
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}{{ product.product_name }}{% endblock %}
+
+{% block content %}
+<h1>製品詳細</h1>
+
+<div class="detail-card">
+    <h2>{{ product.product_name }}</h2>
+    <p><strong>製品品番:</strong> {{ product.product_id }}</p>
+    <p><strong>生産ライン:</strong> {{ product.production_line }}</p>
+</div>
+
+<h2>製品構成部品 (BOM)</h2>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>材料品番</th>
+            <th>材料名</th>
+            <th>数量</th>
+            <th>単位</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in bom_items %}
+        <tr>
+            <td>{{ item.material.material_id }}</td>
+            <td>{{ item.material.material_name }}</td>
+            <td>{{ item.quantity_per_unit }}</td>
+            <td>{{ item.unit_type }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">この製品にはBOM情報がありません</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="button-container">
+    <a href="{% url 'inventory:product_list' %}" class="button">製品一覧に戻る</a>
+</div>
+{% endblock %}
