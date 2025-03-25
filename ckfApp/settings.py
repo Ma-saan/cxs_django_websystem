@@ -42,9 +42,14 @@ INSTALLED_APPS = [
     'sslserver',
     'schedule_app',
     'inventory',
+    'schedule_manager',
+    'rest_framework',
+    'corsheaders',
+    'channels',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -76,6 +81,24 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ckfApp.wsgi.application'
+
+# Channels設定
+ASGI_APPLICATION = 'ckfApp.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
+# RESTフレームワーク設定
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',  # 初期段階ではすべてのアクセスを許可
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+    ],
+}
 
 
 # Database
@@ -143,6 +166,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# React開発サーバーからのアクセスを許可する設定
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
@@ -173,6 +202,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, 'schedule_manager/static/build'),
 )
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
