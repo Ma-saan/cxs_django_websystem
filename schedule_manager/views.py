@@ -9,11 +9,13 @@ from rest_framework.decorators import action
 from datetime import datetime, timedelta
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import status
+import json
+from channels.db import database_sync_to_async
 from .models import WorkCenter, ProductSchedule, ScheduleAttribute
-from .serializers import (
-    WorkCenterSerializer, ProductScheduleSerializer, ScheduleUpdateSerializer
-)
+from .serializers import WorkCenterSerializer, ProductScheduleSerializer, ScheduleUpdateSerializer
+
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class ScheduleManagerView(APIView):
@@ -177,3 +179,155 @@ class ProductScheduleViewSet(viewsets.ModelViewSet):
                 }
             }
         )
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SchedulePositionUpdateView(APIView):
+    """
+    生産予定の位置情報を更新するAPI
+    フロントエンドからのドラッグ＆ドロップ操作を処理します
+    """
+    def post(self, request):
+        try:
+            # リクエストデータのバリデーション
+            card_id = request.data.get('id')
+            position_data = request.data.get('position', {})
+            
+            if not card_id:
+                return Response({'error': 'カードIDが必要です'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            # 対象のスケジュールを取得
+            try:
+                schedule = ProductSchedule.objects.get(id=card_id)
+            except ProductSchedule.DoesNotExist:
+                return Response({'error': '指定されたスケジュールが見つかりません'}, status=status.HTTP_404_NOT_FOUND)
+                
+            # フロントエンドから送られた位置情報
+            side = position_data.get('side')  # 'left' or 'right'
+            line_id = position_data.get('lineId')  # ワークセンターID
+            position = position_data.get('position', 0)  # 表示順
+            
+            # ワークセンターの確認と更新
+            if line_id and line_id != str(schedule.work_center.id):
+                try:
+                    new_work_center = WorkCenter.objects.get(name=line_id)
+                    schedule.work_center = new_work_center
+                except WorkCenter.DoesNotExist:
+                    return Response(
+                        {'error': '指定されたワークセンターが見つかりません'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # 日付の更新（別の日に移動した場合）
+            if side:
+                date_str = request.data.get('date') or datetime.now().strftime('%Y%m%d')
+                try:
+                    # APIから来る日付形式に応じて処理（YYYYMMDDを想定）
+                    year = int(date_str[:4])
+                    month = int(date_str[4:6])
+                    day = int(date_str[6:8])
+                    new_date = datetime(year, month, day).date()
+                    schedule.production_date = new_date
+                except (ValueError, IndexError):
+                    pass  # 日付形式が不正な場合は無視
+            
+            # 位置情報の更新
+            schedule.grid_row = position
+            
+            # 保存
+            schedule.save(update_fields=['work_center', 'production_date', 'grid_row', 'last_updated'])
+            
+            # WebSocketで他のクライアントに通知
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                "schedule_updates",
+                {
+                    "type": "schedule_update",
+                    "message": {
+                        "action": "position_update",
+                        "schedule": ProductScheduleSerializer(schedule).data
+                    }
+                }
+            )
+            
+            return Response({
+                'status': 'success',
+                'message': '位置情報を更新しました',
+                'schedule': ProductScheduleSerializer(schedule).data
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'処理中にエラーが発生しました: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+# schedule_manager/urls.py に追加
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    # 既存のURLパターン
+    # ...
+    
+    # 位置更新用のエンドポイント
+    path('api/schedules/update-position/', views.SchedulePositionUpdateView.as_view(), name='update_position'),
+]
+
+# schedule_manager/consumers.py に追加（WebSocket通信のための拡張）
+
+async def schedule_update(self, event):
+    """スケジュール更新通知のブロードキャスト処理（既存関数の拡張）"""
+    message = event["message"]
+    
+    # クライアントに送信
+    await self.send(text_data=json.dumps(message))
+    
+    # 位置更新の場合、影響を受ける他のスケジュールも更新
+    if message.get("action") == "position_update":
+        schedule = message.get("schedule", {})
+        if schedule:
+            # 同じライン内の同じ日付のカードの順序を再整理
+            work_center_id = schedule.get("work_center")
+            production_date = schedule.get("production_date")
+            
+            if work_center_id and production_date:
+                # データベースから該当するスケジュールを全て取得
+                affected_schedules = await self.get_schedules_for_line_date(
+                    work_center_id, production_date
+                )
+                
+                # 更新されたスケジュールの情報をクライアントに送信
+                if affected_schedules:
+                    await self.send(text_data=json.dumps({
+                        "action": "sync_line",
+                        "work_center": work_center_id,
+                        "date": production_date,
+                        "schedules": affected_schedules
+                    }))
+
+@database_sync_to_async
+def get_schedules_for_line_date(self, work_center_id, date_str):
+    """特定のラインと日付のスケジュールを取得"""
+    try:
+        # 日付形式を変換（必要に応じて）
+        from datetime import datetime
+        if isinstance(date_str, str):
+            if '-' in date_str:
+                date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            else:
+                # YYYYMMDD形式を想定
+                date = datetime.strptime(date_str, '%Y%m%d').date()
+        else:
+            date = date_str
+            
+        # 該当するスケジュールを取得してシリアライズ
+        schedules = ProductSchedule.objects.filter(
+            work_center_id=work_center_id,
+            production_date=date
+        ).order_by('grid_row')
+        
+        serializer = ProductScheduleSerializer(schedules, many=True)
+        return serializer.data
+    except Exception as e:
+        print(f"スケジュール取得エラー: {e}")
+        return []

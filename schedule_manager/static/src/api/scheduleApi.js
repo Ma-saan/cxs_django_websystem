@@ -1,8 +1,13 @@
+// schedule_manager/static/src/api/scheduleApi.js
+
 import { getCsrfToken } from '../utils/csrf';
 
 const API_BASE_URL = '/schedule_manager/api';
 
-// CSRF対応のヘッダー生成
+/**
+ * API用のHTTPヘッダーを生成
+ * CSRF対策トークンを含む
+ */
 const getHeaders = () => {
   return {
     'Content-Type': 'application/json',
@@ -10,130 +15,169 @@ const getHeaders = () => {
   };
 };
 
-// スケジュールデータの取得（日付範囲指定）
-export const fetchSchedules = async (startDate, endDate) => {
+/**
+ * 指定した日付の生産予定データを取得
+ * @param {string} dateStr - YYYYMMDD形式の日付文字列
+ * @returns {Promise<Array>} - 生産予定データの配列
+ */
+export const fetchSchedulesByDate = async (dateStr) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/schedules/?start_date=${startDate}&end_date=${endDate}`);
+    const response = await fetch(`${API_BASE_URL}/schedules/?date=${dateStr}`);
     
     if (!response.ok) {
-      throw new Error(`APIエラー: ${response.statusText}`);
+      throw new Error(`APIエラー: ${response.status} ${response.statusText}`);
     }
     
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('スケジュールデータの取得に失敗しました:', error);
     throw error;
   }
 };
 
-// 特定日のスケジュールデータ取得
-export const fetchSchedulesByDate = async (date) => {
+/**
+ * 生産予定の位置情報を更新
+ * @param {number} scheduleId - 更新対象のスケジュールID
+ * @param {Object} position - 位置情報
+ * @returns {Promise<Object>} - 更新されたスケジュールデータ
+ */
+export const updateSchedulePosition = async (scheduleId, position) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/schedules/?date=${date}`);
-    
-    if (!response.ok) {
-      throw new Error(`APIエラー: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('日別スケジュールデータの取得に失敗しました:', error);
-    throw error;
-  }
-};
-
-// スケジュールの位置更新
-export const updateSchedulePosition = async (scheduleId, gridRow, gridColumn) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/schedules/update_position/`, {
+    const response = await fetch(`${API_BASE_URL}/schedules/update-position/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
         id: scheduleId,
-        grid_row: gridRow,
-        grid_column: gridColumn
+        position: position
       })
     });
     
     if (!response.ok) {
-      throw new Error(`APIエラー: ${response.statusText}`);
+      throw new Error(`APIエラー: ${response.status} ${response.statusText}`);
     }
     
     return await response.json();
   } catch (error) {
-    console.error('スケジュール位置の更新に失敗しました:', error);
+    console.error('位置情報の更新に失敗しました:', error);
     throw error;
   }
 };
 
-// 新規スケジュール作成
-export const createSchedule = async (scheduleData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/schedules/`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(scheduleData)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`APIエラー: ${response.statusText}`);
+/**
+ * WebSocketを使用してリアルタイム更新を行うためのクラス
+ */
+export class ScheduleWebSocket {
+  constructor(onMessage) {
+    this.socket = null;
+    this.onMessage = onMessage;
+    this.isConnected = false;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+  }
+  
+  /**
+   * WebSocket接続を確立
+   */
+  connect() {
+    if (this.socket) {
+      return;
     }
     
-    return await response.json();
-  } catch (error) {
-    console.error('スケジュールの作成に失敗しました:', error);
-    throw error;
-  }
-};
-
-// スケジュール更新
-export const updateSchedule = async (scheduleId, scheduleData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(scheduleData)
-    });
+    // WebSocketのURL構築（http→ws, https→wssに変換）
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws/schedule_manager/`;
     
-    if (!response.ok) {
-      throw new Error(`APIエラー: ${response.statusText}`);
+    this.socket = new WebSocket(wsUrl);
+    
+    this.socket.onopen = () => {
+      console.log('WebSocket接続が確立されました');
+      this.isConnected = true;
+      this.reconnectAttempts = 0;
+      
+      // 初期データ同期リクエスト
+      this.sendMessage({
+        action: 'sync',
+        date: new Date().toISOString().split('T')[0].replace(/-/g, '')
+      });
+    };
+    
+    this.socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (typeof this.onMessage === 'function') {
+          this.onMessage(data);
+        }
+      } catch (error) {
+        console.error('WebSocketメッセージの処理に失敗しました:', error);
+      }
+    };
+    
+    this.socket.onclose = (event) => {
+      console.log(`WebSocket接続が閉じられました: ${event.code} ${event.reason}`);
+      this.isConnected = false;
+      
+      // 再接続を試みる
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.reconnectAttempts++;
+        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+        
+        console.log(`${delay}ms後に再接続を試みます (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+        setTimeout(() => this.connect(), delay);
+      }
+    };
+    
+    this.socket.onerror = (error) => {
+      console.error('WebSocketエラー:', error);
+    };
+  }
+  
+  /**
+   * WebSocketにメッセージを送信
+   * @param {Object} data - 送信するデータ
+   */
+  sendMessage(data) {
+    if (this.socket && this.isConnected) {
+      this.socket.send(JSON.stringify(data));
+    } else {
+      console.warn('WebSocketが接続されていません。メッセージを送信できません。');
     }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('スケジュールの更新に失敗しました:', error);
-    throw error;
   }
-};
-
-// スケジュール削除
-export const deleteSchedule = async (scheduleId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/`, {
-      method: 'DELETE',
-      headers: getHeaders()
-    });
-    
-    if (!response.ok) {
-      throw new Error(`APIエラー: ${response.statusText}`);
+  
+  /**
+   * WebSocket接続を閉じる
+   */
+  disconnect() {
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
+      this.isConnected = false;
     }
-    
-    return true;
-  } catch (error) {
-    console.error('スケジュールの削除に失敗しました:', error);
-    throw error;
   }
-};
+  
+  /**
+   * 特定の日付のデータ同期をリクエスト
+   * @param {string} dateStr - YYYYMMDD形式の日付文字列
+   */
+  syncDate(dateStr) {
+    this.sendMessage({
+      action: 'sync',
+      date: dateStr
+    });
+  }
+}
 
-// ワークセンター一覧取得
+/**
+ * 全ワークセンター情報を取得
+ * @returns {Promise<Array>} - ワークセンター情報の配列
+ */
 export const fetchWorkCenters = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/work-centers/`);
     
     if (!response.ok) {
-      throw new Error(`APIエラー: ${response.statusText}`);
+      throw new Error(`APIエラー: ${response.status} ${response.statusText}`);
     }
     
     return await response.json();
