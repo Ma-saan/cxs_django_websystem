@@ -18,6 +18,7 @@ urlpatterns = [
     path('schedule/', include('schedule.urls')),
     path('mr/', include('meetingRoom.urls')),
     path('schedule_app/', include('schedule_app.urls')),
-    path('inventory/', include('inventory.urls')), 
+    path('inventory/', include('inventory.urls')),
+    path('schedule_manager/', include('schedule_manager.urls')),  
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
