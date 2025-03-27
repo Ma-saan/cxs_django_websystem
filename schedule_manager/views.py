@@ -17,7 +17,7 @@ from .serializers import (
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class ScheduleManagerView(APIView):
-    """メインの管理ビュー - Reactアプリを表示"""
+    """メインの管理ビュー - カレンダーアプリを表示"""
     def get(self, request):
         return render(request, 'schedule_manager/index.html')
 
@@ -37,14 +37,28 @@ class ProductScheduleViewSet(viewsets.ModelViewSet):
         # 日付フィルター
         date_str = self.request.query_params.get('date')
         if date_str:
+            print(f"日付フィルター: {date_str}")
             try:
-                # YYYYMMDDまたはYY/MM/DD形式をサポート
-                if '/' in date_str:
+                # YYYYMMDD形式の場合
+                if len(date_str) == 8 and date_str.isdigit():
+                    year = int(date_str[0:4])
+                    month = int(date_str[4:6])
+                    day = int(date_str[6:8])
+                    target_date = datetime(year, month, day).date()
+                    print(f"解析された日付: {target_date}")
+                    queryset = queryset.filter(production_date=target_date)
+                # YY/MM/DD形式の場合
+                elif '/' in date_str:
                     date = datetime.strptime(date_str, '%y/%m/%d').date()
+                    queryset = queryset.filter(production_date=date)
+                # YYYY-MM-DD形式の場合
+                elif '-' in date_str:
+                    date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    queryset = queryset.filter(production_date=date)
                 else:
-                    date = datetime.strptime(date_str, '%Y%m%d').date()
-                queryset = queryset.filter(production_date=date)
-            except ValueError:
+                    print(f"不明な日付形式: {date_str}")
+            except ValueError as e:
+                print(f"日付パースエラー: {e}")
                 pass
                 
         # 日付範囲フィルター

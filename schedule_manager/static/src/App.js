@@ -1,51 +1,49 @@
-// schedule_manager/static/src/App.js
 import React, { useState, useEffect } from 'react';
+import './App.css';
+import CalendarView from './components/CalendarView';
+import { fetchWorkCenters } from './api/scheduleApi';
 
 function App() {
-  const [scheduleData, setScheduleData] = useState([]);
+  const [workCenters, setWorkCenters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // ワークセンターデータの取得
   useEffect(() => {
-    // APIからデータ取得
-    const fetchData = async () => {
+    const loadWorkCenters = async () => {
       try {
-        const response = await fetch('/schedule_manager/api/schedules/');
-        if (response.ok) {
-          const data = await response.json();
-          setScheduleData(data);
-        } else {
-          console.error('APIからのデータ取得に失敗:', response.status);
-        }
-      } catch (error) {
-        console.error('データ取得エラー:', error);
+        setLoading(true);
+        const data = await fetchWorkCenters();
+        setWorkCenters(data);
+        setError(null);
+      } catch (err) {
+        console.error('ワークセンター取得エラー:', err);
+        setError('データ取得中にエラーが発生しました。');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    loadWorkCenters();
   }, []);
 
   return (
-    <div className="schedule-manager">
-      <h1>生産予定管理システム</h1>
-      {loading ? (
-        <p>データを読み込み中...</p>
-      ) : (
-        <div className="schedule-data">
-          {scheduleData.length > 0 ? (
-            <ul>
-              {scheduleData.map(item => (
-                <li key={item.id}>
-                  {item.production_date}: {item.product_name}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>表示するデータがありません</p>
-          )}
-        </div>
-      )}
+    <div className="app-container">
+      <header className="app-header">
+        <h1>生産予定管理</h1>
+      </header>
+      
+      <main className="app-content">
+        {loading && <div className="loading">データ読み込み中...</div>}
+        {error && <div className="error">{error}</div>}
+        {!loading && !error && (
+          <CalendarView workCenters={workCenters} />
+        )}
+      </main>
+      
+      <footer className="app-footer">
+        <p>掛川工場充填課管理システム © {new Date().getFullYear()}</p>
+      </footer>
     </div>
   );
 }
