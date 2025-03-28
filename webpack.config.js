@@ -3,11 +3,16 @@ const path = require('path');
 module.exports = {
   entry: {
     main: './schedule_manager/static/src/index.js',
-    'production-board': './schedule_manager/static/src/components/ProductionBoard.jsx',
+    'production_board': './schedule_manager/static/src/components/ProductionBoard.jsx',
   },
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'schedule_manager/static/build'),
+    library: {
+      name: '[name]',
+      type: 'var',
+      export: 'default'
+    },
   },
   module: {
     rules: [
