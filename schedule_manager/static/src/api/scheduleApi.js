@@ -186,3 +186,30 @@ export const fetchWorkCenters = async () => {
     throw error;
   }
 };
+
+/**
+ * スケジュールの属性を更新（色や特殊属性、製品名など）
+ * @param {number} scheduleId - 更新対象のスケジュールID
+ * @param {Object} attributes - 更新する属性のオブジェクト
+ * @returns {Promise<Object>} - 更新されたスケジュールデータ
+ */
+export const updateScheduleAttribute = async (scheduleId, attributes) => {
+  try {
+    // APIエンドポイントは実際のDjangoのルーティングに合わせる必要があります
+    // 既存のAPI構造に合わせて調整
+    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/update_attribute/`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify(attributes)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`APIエラー: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('属性更新に失敗しました:', error);
+    throw error;
+  }
+};

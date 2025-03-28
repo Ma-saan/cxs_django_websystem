@@ -4,8 +4,8 @@ from . import views
 from . import csv_importer
 
 router = DefaultRouter()
+router.register(r'schedules', views.ProductScheduleViewSet, basename='schedule')
 router.register(r'work-centers', views.WorkCenterViewSet)
-router.register(r'schedules', views.ProductScheduleViewSet)
 
 app_name = 'schedule_manager'
 

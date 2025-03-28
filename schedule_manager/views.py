@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,8 +9,6 @@ from rest_framework.decorators import action
 from datetime import datetime, timedelta
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework import status
 import json
 from channels.db import database_sync_to_async
 from .models import WorkCenter, ProductSchedule, ScheduleAttribute
@@ -23,10 +21,12 @@ class ScheduleManagerView(APIView):
     def get(self, request):
         return render(request, 'schedule_manager/index.html')
 
+
 class WorkCenterViewSet(viewsets.ReadOnlyModelViewSet):
     """ワークセンター情報を提供するViewSet"""
     queryset = WorkCenter.objects.all().order_by('order')
     serializer_class = WorkCenterSerializer
+
 
 class ProductScheduleViewSet(viewsets.ModelViewSet):
     """生産予定のCRUD操作を提供するViewSet"""
@@ -126,6 +126,56 @@ class ProductScheduleViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['patch'])
+    def update_attribute(self, request, pk=None):
+        """
+        スケジュールの属性を更新するエンドポイント
+        色変更や特殊属性の追加・削除など
+        """
+        schedule = self.get_object()
+        
+        # 表示色の更新
+        if 'display_color' in request.data:
+            schedule.display_color = request.data['display_color']
+        
+        # 製品名の更新
+        if 'product_name' in request.data:
+            schedule.product_name = request.data['product_name']
+        
+        # 特殊属性の追加/削除
+        if 'attribute_type' in request.data:
+            attribute_type = request.data['attribute_type']
+            action = request.data.get('attribute_action', 'add')
+            
+            if action == 'add':
+                # 既存の属性を確認して、なければ追加
+                if not schedule.attributes.filter(attribute_type=attribute_type).exists():
+                    ScheduleAttribute.objects.create(
+                        schedule=schedule,
+                        attribute_type=attribute_type,
+                        value='true'
+                    )
+            elif action == 'remove':
+                # 属性を削除
+                schedule.attributes.filter(attribute_type=attribute_type).delete()
+        
+        schedule.save()
+        
+        # WebSocketで更新を通知
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "schedule_updates",
+            {
+                "type": "schedule_update",
+                "message": {
+                    "action": "update",
+                    "schedule": ProductScheduleSerializer(schedule).data
+                }
+            }
+        )
+        
+        return Response(ProductScheduleSerializer(schedule).data)
+
     def perform_create(self, serializer):
         """作成時の処理"""
         instance = serializer.save()
@@ -179,6 +229,7 @@ class ProductScheduleViewSet(viewsets.ModelViewSet):
                 }
             }
         )
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class SchedulePositionUpdateView(APIView):
@@ -261,73 +312,16 @@ class SchedulePositionUpdateView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+
+# URLの追加設定
+# この部分は urls.py に移動すべきです
 # schedule_manager/urls.py に追加
 from django.urls import path
-from . import views
 
 urlpatterns = [
     # 既存のURLパターン
     # ...
     
     # 位置更新用のエンドポイント
-    path('api/schedules/update-position/', views.SchedulePositionUpdateView.as_view(), name='update_position'),
+    path('api/schedules/update-position/', SchedulePositionUpdateView.as_view(), name='update_position'),
 ]
-
-# schedule_manager/consumers.py に追加（WebSocket通信のための拡張）
-
-async def schedule_update(self, event):
-    """スケジュール更新通知のブロードキャスト処理（既存関数の拡張）"""
-    message = event["message"]
-    
-    # クライアントに送信
-    await self.send(text_data=json.dumps(message))
-    
-    # 位置更新の場合、影響を受ける他のスケジュールも更新
-    if message.get("action") == "position_update":
-        schedule = message.get("schedule", {})
-        if schedule:
-            # 同じライン内の同じ日付のカードの順序を再整理
-            work_center_id = schedule.get("work_center")
-            production_date = schedule.get("production_date")
-            
-            if work_center_id and production_date:
-                # データベースから該当するスケジュールを全て取得
-                affected_schedules = await self.get_schedules_for_line_date(
-                    work_center_id, production_date
-                )
-                
-                # 更新されたスケジュールの情報をクライアントに送信
-                if affected_schedules:
-                    await self.send(text_data=json.dumps({
-                        "action": "sync_line",
-                        "work_center": work_center_id,
-                        "date": production_date,
-                        "schedules": affected_schedules
-                    }))
-
-@database_sync_to_async
-def get_schedules_for_line_date(self, work_center_id, date_str):
-    """特定のラインと日付のスケジュールを取得"""
-    try:
-        # 日付形式を変換（必要に応じて）
-        from datetime import datetime
-        if isinstance(date_str, str):
-            if '-' in date_str:
-                date = datetime.strptime(date_str, '%Y-%m-%d').date()
-            else:
-                # YYYYMMDD形式を想定
-                date = datetime.strptime(date_str, '%Y%m%d').date()
-        else:
-            date = date_str
-            
-        # 該当するスケジュールを取得してシリアライズ
-        schedules = ProductSchedule.objects.filter(
-            work_center_id=work_center_id,
-            production_date=date
-        ).order_by('grid_row')
-        
-        serializer = ProductScheduleSerializer(schedules, many=True)
-        return serializer.data
-    except Exception as e:
-        print(f"スケジュール取得エラー: {e}")
-        return []
