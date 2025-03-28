@@ -2,6 +2,112 @@
 {% load static %}
 
 {% block content %}
+<style>
+/* カレンダー表示用のスタイル */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-top: 10px;
+}
+
+.calendar-day-header {
+  text-align: center;
+  font-weight: bold;
+  padding: 8px;
+  background-color: #f0f0f0;
+}
+
+.calendar-day {
+  height: 40px;
+  text-align: center;
+  padding: 8px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  transition: background-color 0.2s;
+}
+
+.calendar-day:hover {
+  background-color: #e9f0ff;
+}
+
+.calendar-grid > div:nth-child(7n+1) {
+  color: #ff0000;
+}
+
+.calendar-grid > div:nth-child(7n) {
+  color: #0000ff;
+}
+
+.calendar-day.selected {
+  background-color: #cce5ff;
+  border-color: #007bff;
+}
+
+.calendar-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.container-flex {
+  display: flex;
+  gap: 20px;
+}
+
+.calendar-container {
+  width: 350px;
+  flex-shrink: 0;
+}
+
+.schedule-data {
+  flex: 1;
+}
+
+/* ボタンスタイル */
+.btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+  border: 1px solid #0069d9;
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid #007bff;
+  color: #007bff;
+}
+
+.btn-outline:hover {
+  background-color: #e6f2ff;
+}
+
+/* ヘッダー部分 */
+.schedule-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+</style>
+
 <div class="schedule-container">
     <div class="schedule-header">
         <h1>生産予定管理システム</h1>
@@ -13,7 +119,7 @@
     </div>
     
     <div class="container-flex">
-        <!-- 既存のカレンダー表示部分（そのまま保持） -->
+        <!-- カレンダー表示部分 -->
         <div class="calendar-container">
             <div class="calendar-controls">
                 <button id="prev-month" class="btn btn-outline">前月</button>
@@ -26,9 +132,8 @@
             </div>
         </div>
         
-        <!-- 生産予定表示エリア（ドラッグ＆ドロップインターフェースに置き換え） -->
+        <!-- 生産予定表示エリア -->
         <div id="production-board-root" class="schedule-data">
-            <!-- React コンポーネントがここにマウントされます -->
             <div class="no-date-selected">
                 <p>左のカレンダーから日付を選択してください</p>
             </div>
@@ -41,7 +146,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // カレンダーの処理（既存のコード）
+        console.log('カレンダー初期化開始');
         const calendarGrid = document.getElementById('calendar-grid');
         const currentMonthDisplay = document.getElementById('current-month');
         const prevMonthButton = document.getElementById('prev-month');
@@ -54,8 +159,9 @@
         const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月",
             "7月", "8月", "9月", "10月", "11月", "12月"];
         
-        // カレンダーの描画（既存のコード）
+        // カレンダーの描画
         function renderCalendar() {
+            console.log('カレンダーグリッド生成');
             // 現在の年月を表示
             currentMonthDisplay.textContent = `${currentDate.getFullYear()}年${monthNames[currentDate.getMonth()]}`;
             
@@ -108,7 +214,7 @@
                     dayElement.style.fontWeight = 'bold';
                 }
                 
-                // 日付クリック時の処理 - ここを変更して React コンポーネントと連携
+                // 日付クリック時の処理
                 dayElement.addEventListener('click', function() {
                     // 選択されているすべての日付のハイライトを解除
                     document.querySelectorAll('.calendar-day.selected').forEach(el => {
@@ -143,42 +249,51 @@
         
         // 選択された日付の生産予定をドラッグ＆ドロップインターフェースで表示
         function renderProductionBoard(date) {
-            // Reactコンポーネントが存在するか確認
-            if (typeof ProductionBoard !== 'undefined' && typeof ReactDOM !== 'undefined') {
-                const container = document.getElementById('production-board-root');
-                
-                // 日付をフォーマット（YYYYMMDD）
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                const formattedDate = `${year}${month}${day}`;
-                
-                // Reactコンポーネントをレンダリング
-                const root = ReactDOM.createRoot(container);
-                root.render(React.createElement(ProductionBoard, { selectedDate: formattedDate }));
+            // 日付をフォーマット（YYYYMMDD）
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const formattedDate = `${year}${month}${day}`;
+            
+            console.log('選択された日付:', formattedDate);
+            
+            const container = document.getElementById('production-board-root');
+            
+            // React コンポーネントが存在するか確認
+            if (typeof ProductionBoard !== 'undefined') {
+                try {
+                    console.log('Reactコンポーネントをレンダリング');
+                    // ReactDOM v18 の場合
+                    if (typeof ReactDOM.createRoot === 'function') {
+                        const root = ReactDOM.createRoot(container);
+                        root.render(React.createElement(ProductionBoard, { selectedDate: formattedDate }));
+                    } else {
+                        // ReactDOM v17以前の場合
+                        ReactDOM.render(React.createElement(ProductionBoard, { selectedDate: formattedDate }), container);
+                    }
+                } catch (error) {
+                    console.error('Reactコンポーネントのレンダリングエラー:', error);
+                    container.innerHTML = '<div class="error-message">表示エラーが発生しました</div>';
+                }
             } else {
-                console.error('ProductionBoard component not loaded correctly');
-                
-                // フォールバック: 従来の方法でデータを表示
-                const container = document.getElementById('production-board-root');
+                console.log('ProductionBoardコンポーネントが見つかりません');
                 container.innerHTML = '<div class="loading-schedules">生産予定の取得中...</div>';
                 
-                // 日付をフォーマット（YYYYMMDD）
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                const formattedDate = `${year}${month}${day}`;
-                
-                // APIからデータ取得（従来のコード）
+                // フォールバック: 通常のAPIリクエスト
                 fetch(`/schedule_manager/api/schedules/?date=${formattedDate}`)
                     .then(response => response.json())
                     .then(data => {
-                        // 従来の表示方法（一覧表示）
-                        // ...
+                        console.log('API応答:', data);
+                        // データ表示処理
+                        container.innerHTML = `<div>
+                            <h3>${year}年${month}月${day}日の予定</h3>
+                            <p>${data.length}件の予定があります</p>
+                            <ul>${data.map(item => `<li>${item.product_name}</li>`).join('')}</ul>
+                        </div>`;
                     })
                     .catch(error => {
                         console.error('データ取得エラー:', error);
-                        container.innerHTML = '<div class="error-message">データの取得に失敗しました。</div>';
+                        container.innerHTML = '<div class="error-message">データの取得に失敗しました</div>';
                     });
             }
         }

@@ -4,7 +4,7 @@ import moment from 'moment';
 import 'moment/locale/ja';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './CalendarView.css';
-import { fetchSchedules } from '../api/scheduleApi';
+import { fetchSchedulesByDate as fetchSchedules} from '../api/scheduleApi';
 import DayScheduleView from './DayScheduleView';
 
 // 日本語ロケール設定

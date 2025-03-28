@@ -6,7 +6,7 @@ module.exports = {
     'production-board': './schedule_manager/static/src/components/ProductionBoard.jsx',
   },
   output: {
-    filename: 'main.js',
+    filename: '[name].js',
     path: path.resolve(__dirname, 'schedule_manager/static/build'),
   },
   module: {

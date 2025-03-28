@@ -1,0 +1,88 @@
+/* カレンダーのグリッドレイアウト */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-top: 10px;
+  }
+  
+  /* 曜日ヘッダー */
+  .calendar-day-header {
+    text-align: center;
+    font-weight: bold;
+    padding: 8px;
+    background-color: #f0f0f0;
+  }
+  
+  /* 日付マス */
+  .calendar-day {
+    height: 40px;
+    text-align: center;
+    padding: 8px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    transition: background-color 0.2s;
+  }
+  
+  .calendar-day:hover {
+    background-color: #e9f0ff;
+  }
+  
+  /* 日曜日の色 */
+  .calendar-grid > div:nth-child(7n+1) {
+    color: #ff0000;
+  }
+  
+  /* 土曜日の色 */
+  .calendar-grid > div:nth-child(7n) {
+    color: #0000ff;
+  }
+  
+  /* 選択された日付 */
+  .calendar-day.selected {
+    background-color: #cce5ff;
+    border-color: #007bff;
+  }
+  
+  /* カレンダーコントロール */
+  .calendar-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  /* コンテナのレイアウト調整 */
+  .container-flex {
+    display: flex;
+    gap: 20px;
+  }
+  
+  .calendar-container {
+    width: 350px;
+    flex-shrink: 0;
+  }
+  
+  .schedule-data {
+    flex: 1;
+  }
+  
+  /* 月間表示のスタイル調整 */
+  #current-month {
+    font-size: 1.2rem;
+    margin: 0;
+  }
+  
+  .btn-outline {
+    background-color: transparent;
+    border: 1px solid #007bff;
+    color: #007bff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .btn-outline:hover {
+    background-color: #007bff;
+    color: white;
+  }
