@@ -2,7 +2,9 @@
 {% load static %}
 
 {% block content %}
+{% csrf_token %}
 <link rel="stylesheet" href="{% static 'schedule_manager/css/schedule_board.css' %}">
+<link rel="stylesheet" href="{% static 'schedule_manager/css/product_cards.css' %}">
 
 <div class="schedule-container">
     <div class="schedule-header">
@@ -101,6 +103,12 @@
 <!-- jQueryとjQuery UI -->
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
 <script src="{% static 'schedule_manager/js/schedule_board.js' %}"></script>
+<script src="{% static 'schedule_manager/js/product_cards.js' %}"></script>
+<script src="{% static 'schedule_manager/js/schedule_manager_utils.js' %}"></script>
+
+<script src="{% static 'schedule_manager/js/schedule_debug_helper.js' %}"></script>
+
 
 {% endblock %}

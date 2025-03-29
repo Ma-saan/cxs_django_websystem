@@ -19,6 +19,21 @@ const ScheduleBoard = (function() {
         "#cb9696", "#a1e6ff", "#b3b3b3", "#ffffff"
     ];
     
+    // APIのwork_centerとクライアントのIDのマッピング
+    const workCenterMapping = {
+        1: '200100',  // JP1
+        2: '200201',  // 2A
+        3: '200200',  // 2B
+        4: '200202',  // 2C
+        5: '200300',  // JP3
+        6: '200400',  // JP4
+        7: '200601',  // 6A
+        8: '200602',  // 6B
+        9: '200700',  // 7A/7B
+        10: '200700', // 予備
+        11: '200700'  // 予備
+    };
+    
     // 状態変数
     let currentDate = new Date();
     let selectedDate = null;
@@ -239,115 +254,175 @@ const ScheduleBoard = (function() {
     }
     
     // スケジュールデータ取得
-    function fetchScheduleData(side, date) {
-        const formattedDate = formatDateForApi(date);
-        
-        $.ajax({
-            url: `${API_URL}schedules/?date=${formattedDate}`,
-            type: 'GET',
-            success: function(data) {
-                // ライン別にデータをグループ化
-                const groupedData = {};
+function fetchScheduleData(side, date) {
+    const formattedDate = formatDateForApi(date);
+    
+    console.log(`${side}側のデータを取得: ${formattedDate}`);
+    
+    // APIのwork_centerとクライアントのIDのマッピング
+    const workCenterMapping = {
+        1: '200100',  // JP1
+        2: '200201',  // 2A
+        3: '200200',  // 2B
+        4: '200202',  // 2C
+        5: '200300',  // JP3
+        6: '200400',  // JP4
+        7: '200601',  // 6A
+        8: '200602',  // 6B
+        9: '200700',  // 7A/7B
+        10: '200700', // 予備
+        11: '200700'  // 予備
+    };
+    
+    $.ajax({
+        url: `${API_URL}schedules/?date=${formattedDate}`,
+        type: 'GET',
+        success: function(data) {
+            console.log(`${side}ボードデータ取得成功:`, data);
+            
+            // ライン別にデータをグループ化
+            const groupedData = {};
+            
+            WORK_CENTERS.forEach(workCenter => {
+                // APIから返されるwork_centerの値をマッピング
+                groupedData[workCenter.id] = data.filter(item => {
+                    const itemWorkCenterId = workCenterMapping[item.work_center] || String(item.work_center);
+                    return itemWorkCenterId === workCenter.id;
+                }).sort((a, b) => (a.grid_row - b.grid_row || a.grid_column - b.grid_column));
                 
-                WORK_CENTERS.forEach(workCenter => {
-                    groupedData[workCenter.id] = data.filter(
-                        item => item.work_center === workCenter.id
-                    ).sort((a, b) => (a.grid_row - b.grid_row || a.grid_column - b.grid_column));
-                });
-                
-                // 状態を更新
-                boardData[side] = groupedData;
-                
-                // ボードを更新
-                updateBoard(side);
-            },
-            error: function(xhr, status, error) {
-                console.error('データ取得エラー:', error);
-                alert('スケジュールデータの取得に失敗しました');
-            }
-        });
-    }
+                console.log(`${side}ボード / ${workCenter.name}:`, groupedData[workCenter.id].length, '件のカード');
+            });
+            
+            // 状態を更新
+            boardData[side] = groupedData;
+            
+            // ボードを更新
+            updateBoard(side);
+        },
+        error: function(xhr, status, error) {
+            console.error('データ取得エラー:', error);
+            alert('スケジュールデータの取得に失敗しました');
+        }
+    });
+}
     
     // ボード更新
     function updateBoard(side) {
         const boardSelector = side === 'left' ? '#board-left' : '#board-right';
         
+        console.log(`${side}ボードを更新中...`);
+        
         // 各ラインのカードを更新
         WORK_CENTERS.forEach(workCenter => {
-            const lineCards = $(`${boardSelector} .line-cards[data-line-id="${workCenter.id}"]`);
+            const lineCards = $(`${boardSelector} .production-lines .line-cards[data-line-id="${workCenter.id}"]`);
+            if (lineCards.length === 0) {
+                console.warn(`ライン要素が見つかりません: ${workCenter.id}`);
+                return;
+            }
+            
             lineCards.empty();
             
             const cards = boardData[side][workCenter.id] || [];
+            console.log(`${side}ボード/${workCenter.name}: ${cards.length}件のカード`);
             
             cards.forEach(card => {
                 const cardElement = createCardElement(card, side);
                 lineCards.append(cardElement);
             });
         });
+        
+        console.log(`${side}ボードの更新完了`);
     }
     
     // カード要素の作成
-    function createCardElement(card, side) {
-        const cardColor = card.display_color || '#ffffff';
-        
-        // テキスト色の決定（背景が明るいか暗いかで）
-        const getBrightness = (hexColor) => {
+function createCardElement(card, side) {
+    // console.log('カード作成:', card);
+    
+    let cardColor = card.display_color || '#ffffff';
+    
+    // 色形式の検証と修正
+    if (!cardColor || typeof cardColor !== 'string') {
+        cardColor = '#ffffff'; // デフォルト色
+    } else if (!cardColor.startsWith('#')) {
+        // #が付いていない場合は追加
+        cardColor = '#' + cardColor;
+    }
+    
+    // テキスト色の決定（背景が明るいか暗いかで）
+    const getBrightness = (hexColor) => {
+        try {
+            if (!hexColor || !hexColor.startsWith('#') || hexColor.length < 4) {
+                return 255; // 異常値の場合は黒テキスト
+            }
+            
+            // #RGBを#RRGGBBに変換
+            if (hexColor.length === 4) {
+                const r = hexColor.charAt(1);
+                const g = hexColor.charAt(2);
+                const b = hexColor.charAt(3);
+                hexColor = `#${r}${r}${g}${g}${b}${b}`;
+            }
+            
             const rgb = parseInt(hexColor.substring(1), 16);
             const r = (rgb >> 16) & 0xff;
             const g = (rgb >> 8) & 0xff;
             const b = (rgb >> 0) & 0xff;
             return (r * 299 + g * 587 + b * 114) / 1000;
-        };
-        
-        const textColor = getBrightness(cardColor) > 128 ? '#000000' : '#ffffff';
-        
-        const cardElement = $('<div>')
-            .addClass('product-card')
-            .attr('data-card-id', card.id)
-            .css({
-                'background-color': cardColor,
-                'color': textColor
-            });
-        
-        const nameElement = $('<div>')
-            .addClass('product-name')
-            .text(card.product_name);
-        
-        const detailsElement = $('<div>')
-            .addClass('product-details')
-            .append(
-                $('<span>').addClass('product-number').text(`品番: ${card.product_number}`),
-                $('<span>').addClass('product-quantity').text(`数量: ${card.production_quantity}`)
-            );
-        
-        cardElement.append(nameElement, detailsElement);
-        
-        // 特殊属性の表示
-        if (card.attributes && card.attributes.length > 0) {
-            const attributesElement = $('<div>').addClass('product-attributes');
-            
-            card.attributes.forEach(attr => {
-                let attributeText = '';
-                
-                if (attr.attribute_type === 'mixing') attributeText = '↻ 連続撹拌';
-                else if (attr.attribute_type === 'rapid_fill') attributeText = '⚡ 早充依頼';
-                else if (attr.attribute_type === 'special_transfer') attributeText = '⚠️ 特急移庫';
-                else if (attr.attribute_type === 'icon_6b') attributeText = '6B';
-                else if (attr.attribute_type === 'icon_7c') attributeText = '7C';
-                else if (attr.attribute_type === 'icon_2c') attributeText = '2C';
-                
-                if (attributeText) {
-                    attributesElement.append(
-                        $('<span>')
-                            .addClass(`product-attribute ${attr.attribute_type}`)
-                            .text(attributeText)
-                    );
-                }
-            });
-            
-            cardElement.append(attributesElement);
+        } catch (e) {
+            console.warn('色変換エラー:', hexColor, e);
+            return 255; // エラー時は黒テキスト
         }
+    };
+    
+    const textColor = getBrightness(cardColor) > 128 ? '#000000' : '#ffffff';
+    
+    const cardElement = $('<div>')
+        .addClass('product-card')
+        .attr('data-card-id', card.id)
+        .css({
+            'background-color': cardColor,
+            'color': textColor
+        });
+    
+    const nameElement = $('<div>')
+        .addClass('product-name')
+        .text(card.product_name || '名称不明');
+    
+    const detailsElement = $('<div>')
+        .addClass('product-details')
+        .append(
+            $('<span>').addClass('product-number').text(`品番: ${card.product_number || 'なし'}`),
+            $('<span>').addClass('product-quantity').text(`数量: ${card.production_quantity || 0}`)
+        );
+    
+    cardElement.append(nameElement, detailsElement);
+    
+    // 特殊属性の表示（現状のままでOK）
+    if (card.attributes && card.attributes.length > 0) {
+        const attributesElement = $('<div>').addClass('product-attributes');
         
+        card.attributes.forEach(attr => {
+            let attributeText = '';
+            
+            if (attr.attribute_type === 'mixing') attributeText = '↻ 連続撹拌';
+            else if (attr.attribute_type === 'rapid_fill') attributeText = '⚡ 早充依頼';
+            else if (attr.attribute_type === 'special_transfer') attributeText = '⚠️ 特急移庫';
+            else if (attr.attribute_type === 'icon_6b') attributeText = '6B';
+            else if (attr.attribute_type === 'icon_7c') attributeText = '7C';
+            else if (attr.attribute_type === 'icon_2c') attributeText = '2C';
+            
+            if (attributeText) {
+                attributesElement.append(
+                    $('<span>')
+                        .addClass(`product-attribute ${attr.attribute_type}`)
+                        .text(attributeText)
+                );
+            }
+        });
+        
+        cardElement.append(attributesElement);
+    }
+           
         // コンテキストメニュー
         cardElement.on('contextmenu', function(e) {
             e.preventDefault();
@@ -752,7 +827,60 @@ const ScheduleBoard = (function() {
     
     // 公開API
     return {
-        init: init
+        init: init,
+        // デバッグ機能を追加
+        debug: {
+            loadDate: function(dateStr) {
+                const year = parseInt(dateStr.substring(0, 4));
+                const month = parseInt(dateStr.substring(4, 6)) - 1;
+                const day = parseInt(dateStr.substring(6, 8));
+                selectedDate = new Date(year, month, day);
+                loadBoardData();
+                return true;
+            },
+            showData: function() {
+                console.log('ボードデータ:', boardData);
+                return boardData;
+            },
+            // テストカードを作成
+            createTestCard: function(side, lineId) {
+                const boardSelector = side === 'left' ? '#board-left' : '#board-right';
+                const lineCards = $(`${boardSelector} .production-lines .line-cards[data-line-id="${lineId}"]`);
+                
+                if (lineCards.length === 0) {
+                    return `ライン ${lineId} が見つかりません`;
+                }
+                
+                const testCard = {
+                    id: 'test-' + Date.now(),
+                    product_name: 'テスト製品',
+                    product_number: 'TEST-001',
+                    production_quantity: 100,
+                    work_center: lineId,
+                    display_color: '#ffff00'
+                };
+                
+                const cardElement = createCardElement(testCard, side);
+                lineCards.append(cardElement);
+                
+                return `${side}ボードの${lineId}ラインにテストカードを追加しました`;
+            },
+            
+            // レイアウト確認
+            checkLayout: function() {
+                const leftLines = $('#board-left .production-lines .line-cards');
+                const rightLines = $('#board-right .production-lines .line-cards');
+                
+                console.log('左ボードのライン数:', leftLines.length);
+                console.log('右ボードのライン数:', rightLines.length);
+                
+                leftLines.each(function() {
+                    console.log('左ライン ID:', $(this).data('line-id'));
+                });
+                
+                return `左ボード: ${leftLines.length}ライン, 右ボード: ${rightLines.length}ライン`;
+            }
+        }
     };
 })();
 
