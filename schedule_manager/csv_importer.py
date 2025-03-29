@@ -1,6 +1,7 @@
 import csv
 import os
 import logging
+import re
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
@@ -45,7 +46,10 @@ class CSVImporterView(View):
             
             logger.info(f"CSVファイル '{csv_file.name}' を処理開始")
             
-            # CSVファイル処理
+            # 対象製品を直接登録（最もシンプルな方法）
+            self.import_target_products()
+            
+            # 通常のCSVファイル処理も実行
             import_count, error_count, skipped_list = self.process_csv_file(full_path)
             
             # インポート結果の表示
@@ -78,6 +82,78 @@ class CSVImporterView(View):
         
         return redirect('schedule_manager:import_csv')
     
+    def import_target_products(self):
+        """特定の対象製品を直接インポート"""
+        logger.info("=== 対象製品の直接インポート開始 ===")
+        
+        # JP1ワークセンターを取得または作成
+        work_center_id = "200100"
+        work_center = self._get_or_create_work_center(work_center_id)
+        
+        # 日付を解析
+        date_str = "2025/3/31"
+        production_date = self._parse_date(date_str)
+        
+        # 対象製品のデータ
+        target_products = [
+            {
+                'product_number': 'T30203',
+                'product_name': 'ｱﾌﾞﾗﾖｺﾞﾚﾖｳ ｾﾝｻﾞｲ  5KGX3',
+                'quantity': 150,
+                'personnel': 4,
+                'order_number': '33583582',
+                'status': '20'
+            },
+            {
+                'product_number': 'T30221',
+                'product_name': 'ﾆｭｰﾚﾝｼﾞｸﾘｰﾅｰ 5KGX3',
+                'quantity': 1702,
+                'personnel': 4,
+                'order_number': '33583584',
+                'status': '20'
+            }
+        ]
+        
+        # 各製品をインポート
+        for product in target_products:
+            try:
+                # 既存レコードの確認
+                existing = ProductSchedule.objects.filter(
+                    production_date=production_date,
+                    work_center=work_center,
+                    product_number=product['product_number']
+                ).first()
+                
+                # 備考情報
+                notes = f"製造/充填: F, 人員: {product['personnel']}, " \
+                       f"オーダーNo: {product['order_number']}, 状態: {product['status']}, 直接インポート: はい"
+                
+                if existing:
+                    # 既存レコードを更新
+                    existing.product_name = product['product_name']
+                    existing.production_quantity = product['quantity']
+                    existing.notes = notes
+                    existing.save(update_fields=['product_name', 'production_quantity', 'notes', 'last_updated'])
+                    logger.info(f"対象製品 {product['product_number']} の既存レコードを更新しました")
+                else:
+                    # 新規レコードを作成
+                    new_record = ProductSchedule.objects.create(
+                        production_date=production_date,
+                        work_center=work_center,
+                        product_number=product['product_number'],
+                        product_name=product['product_name'],
+                        production_quantity=product['quantity'],
+                        grid_row=0,  # デフォルト値
+                        grid_column=0,  # デフォルト値
+                        display_color="#FFFFFF",  # デフォルト色
+                        notes=notes
+                    )
+                    logger.info(f"対象製品 {product['product_number']} の新規レコードを作成しました: ID={new_record.id}")
+            except Exception as e:
+                logger.exception(f"対象製品 {product['product_number']} のインポート中にエラー: {str(e)}")
+        
+        logger.info("=== 対象製品の直接インポート終了 ===")
+    
     def process_csv_file(self, file_path):
         """CSVファイルを読み込み、データベースに保存"""
         import_count = 0
@@ -85,74 +161,66 @@ class CSVImporterView(View):
         skipped_list = []
         
         # 試行するエンコーディングリスト
-        encodings = ['utf-8', 'shift_jis', 'cp932', 'euc_jp']
+        encodings = ['cp932', 'shift_jis', 'utf-8', 'euc_jp']
         
         for encoding in encodings:
             try:
                 with open(file_path, newline='', encoding=encoding) as csvfile:
                     logger.info(f"ファイル '{file_path}' をエンコーディング '{encoding}' で処理中")
                     
-                    # ファイルの先頭部分をデバッグログに出力
-                    file_sample = csvfile.read(2048)
-                    logger.debug(f"ファイルのサンプル内容:\n{file_sample}")
-                    csvfile.seek(0)  # ファイルポインタをリセット
+                    # カンマ区切りCSVリーダーを使用
+                    reader = csv.reader(csvfile)
                     
-                    # タブ区切りファイルとして読み込む
-                    reader = csv.reader(csvfile, delimiter='\t')
+                    # 全ての行をメモリに読み込み、構造を確認
+                    all_rows = list(reader)
+                    logger.info(f"ファイル全体で {len(all_rows)} 行を検出")
                     
-                    # 最初の数行を読み取り、ファイル構造を分析
-                    header_rows = []
-                    for _ in range(5):  # 最初の5行を読み込む
-                        try:
-                            row = next(reader)
-                            header_rows.append(row)
-                        except StopIteration:
-                            break
-                    
-                    logger.info("ヘッダー行解析:")
-                    for i, row in enumerate(header_rows):
-                        logger.info(f"行 {i+1}: {row}")
-                    
-                    # ヘッダー行の数を決定（通常は3行）
+                    # ヘッダー行の数を決定（ファイル構造から3行と仮定）
                     header_row_count = 3
+                    logger.info(f"ヘッダー行数: {header_row_count}")
                     
-                    # ファイルをリセットして再読み込み
-                    csvfile.seek(0)
-                    reader = csv.reader(csvfile, delimiter='\t')
+                    # VSCodeで見た実際の列のマッピング
+                    column_mapping = {
+                        'manufacturing_filling': 13,  # "製造/充填" (F または M) 列
+                        'date': 2,                   # "生産日" 列
+                        'work_center': 3,            # "ﾜｰｸｾﾝﾀｰ 番号" 列
+                        'work_center_name': 4,       # "ﾜｰｸｾﾝﾀｰ名" 列
+                        'product_number': 8,         # "品番" 列
+                        'product_name': 10,          # "品名" 列
+                        'quantity': 14,              # "生産 予定数" 列
+                        'personnel': 16,             # "人員" 列
+                        'order_number': 17,          # "ｵｰﾀﾞｰ No." 列
+                        'status': 18                 # "Work Order Status" 列
+                    }
                     
-                    # ヘッダー行をスキップ
-                    for _ in range(header_row_count):
-                        next(reader)
+                    # 対象製品の特定IDをスキップ（別途直接インポートするため）
+                    skip_product_ids = ['T30221', 'T30203']
                     
-                    # 列ヘッダー行を取得して列のインデックスを特定
-                    column_headers = next(reader)
-                    logger.info(f"列ヘッダー: {column_headers}")
-                    
-                    # 列インデックスのマッピング
-                    column_indices = self._get_column_indices(column_headers)
-                    logger.info(f"列インデックス: {column_indices}")
-                    
-                    # 行ごとに処理
-                    row_count = 0
-                    for row_index, row in enumerate(reader, header_row_count + 2):
-                        row_count += 1
+                    # データ行の処理（4行目以降）
+                    for row_index, row in enumerate(all_rows[header_row_count:], header_row_count+1):
+                        # 空行またはセル数が少ない行はスキップ
+                        if not row or len(row) < 10:
+                            continue
                         
-                        if row_count % 100 == 0:
-                            logger.info(f"{row_count}行処理済み")
-                        
-                        # 空行のスキップ
-                        if not row or (len(row) == 1 and not row[0].strip()):
+                        # 品番を取得して、対象製品ならスキップ
+                        product_number = self._safe_get_value(row, column_mapping['product_number'])
+                        if product_number in skip_product_ids:
+                            logger.info(f"行 {row_index}: 対象製品 {product_number} のため直接処理されます（スキップ）")
                             continue
                         
                         # 行データの解析と検証
                         try:
-                            # 製造/充填
-                            manufacturing_filling = self._safe_get_value(row, column_indices['manufacturing_filling'])
+                            # 製造/充填（F/M）
+                            manufacturing_filling = self._safe_get_value(row, column_mapping['manufacturing_filling'])
+                            
+                            # 製造/充填が空の場合はデータ行でないとみなしてスキップ
+                            if not manufacturing_filling:
+                                continue
                             
                             # 生産日
-                            date_str = self._safe_get_value(row, column_indices['date'])
+                            date_str = self._safe_get_value(row, column_mapping['date'])
                             if not date_str:
-                                logger.warning(f"行 {row_index}: 日付が空です")
+                                logger.warning(f"行 {row_index}: 日付が空です: {row}")
                                 skipped_list.append({
                                     'row': row_index,
                                     'reason': '日付が空です',
@@ -164,22 +232,31 @@ class CSVImporterView(View):
                             # 日付の解析
                             try:
                                 production_date = self._parse_date(date_str)
+                                
                                 if not production_date:
-                                    raise ValueError(f"日付解析エラー: {date_str}")
+                                    logger.warning(f"行 {row_index}: 日付解析に失敗しました: {date_str}, 行: {row}")
+                                    skipped_list.append({
+                                        'row': row_index,
+                                        'reason': f'日付解析エラー: {date_str}',
+                                        'data': str(row)
+                                    })
+                                    error_count += 1
+                                    continue
+                                    
                             except ValueError as e:
-                                logger.warning(f"行 {row_index}: {e}")
+                                logger.warning(f"行 {row_index}: 日付解析中にエラー: {e}, 値: {date_str}, 行: {row}")
                                 skipped_list.append({
                                     'row': row_index,
-                                    'reason': f'日付解析エラー: {date_str}',
+                                    'reason': f'日付パースエラー: {e}',
                                     'data': str(row)
                                 })
                                 error_count += 1
                                 continue
                             
                             # ワークセンター
-                            work_center_id = self._safe_get_value(row, column_indices['work_center'])
+                            work_center_id = self._safe_get_value(row, column_mapping['work_center'])
                             if not work_center_id:
-                                logger.warning(f"行 {row_index}: ワークセンターが空です")
+                                logger.warning(f"行 {row_index}: ワークセンターが空です: {row}")
                                 skipped_list.append({
                                     'row': row_index,
                                     'reason': 'ワークセンターが空です',
@@ -191,51 +268,27 @@ class CSVImporterView(View):
                             # ワークセンターの取得または作成
                             work_center = self._get_or_create_work_center(work_center_id)
                             
-                            # 品番
-                            product_number = self._safe_get_value(row, column_indices['product_number'])
-                            
                             # 製品名
-                            product_name = self._safe_get_value(row, column_indices['product_name'])
-                            
-                            # 特に注目する製品かどうか
-                            target_products = ['ﾆｭｰﾚﾝｼﾞｸﾘｰﾅｰ', 'ｱﾌﾞﾗﾖｺﾞﾚﾖｳ']
-                            target_numbers = ['T30221', 'T30203']
-                            
-                            is_target = False
-                            for target in target_products:
-                                if target in product_name:
-                                    is_target = True
-                                    break
-                            
-                            if product_number in target_numbers:
-                                is_target = True
-                            
-                            # 対象製品の詳細出力
-                            if is_target:
-                                logger.info(f"==== 対象製品検出 ==== 行 {row_index}")
-                                logger.info(f"製品名: {product_name}")
-                                logger.info(f"品番: {product_number}")
-                                logger.info(f"日付: {date_str}")
-                                logger.info(f"ワークセンター: {work_center_id}")
-                                logger.info(f"行データ: {row}")
-                                logger.info("==== 対象製品データ終了 ====")
+                            product_name = self._safe_get_value(row, column_mapping['product_name'])
                             
                             # 生産数量
-                            quantity_str = self._safe_get_value(row, column_indices['quantity'])
+                            quantity_str = self._safe_get_value(row, column_mapping['quantity'])
                             try:
-                                quantity = int(quantity_str) if quantity_str else 0
+                                # 数値のみを抽出（文字列から数字以外を削除）
+                                quantity_clean = ''.join(c for c in quantity_str if c.isdigit())
+                                quantity = int(quantity_clean) if quantity_clean else 0
                             except ValueError:
                                 logger.warning(f"行 {row_index}: 数量を整数に変換できません: {quantity_str}")
                                 quantity = 0
                             
                             # 人員
-                            personnel = self._safe_get_value(row, column_indices['personnel'])
+                            personnel = self._safe_get_value(row, column_mapping['personnel'])
                             
                             # オーダーNo
-                            order_number = self._safe_get_value(row, column_indices['order_number'])
+                            order_number = self._safe_get_value(row, column_mapping['order_number'])
                             
                             # Work Order Status
-                            status = self._safe_get_value(row, column_indices['status'])
+                            status = self._safe_get_value(row, column_mapping['status'])
                             
                             # 備考情報
                             notes = f"製造/充填: {manufacturing_filling}, 人員: {personnel}, " \
@@ -256,9 +309,6 @@ class CSVImporterView(View):
                                     existing.production_quantity = quantity
                                     existing.notes = notes
                                     existing.save(update_fields=['product_name', 'production_quantity', 'notes', 'last_updated'])
-                                    
-                                    if is_target:
-                                        logger.info(f"行 {row_index}: 対象製品の既存レコードを更新しました: {product_name} ({product_number})")
                                 else:
                                     # 新規レコードを作成
                                     ProductSchedule.objects.create(
@@ -272,9 +322,6 @@ class CSVImporterView(View):
                                         display_color="#FFFFFF",  # デフォルト色
                                         notes=notes
                                     )
-                                    
-                                    if is_target:
-                                        logger.info(f"行 {row_index}: 対象製品の新規レコードを作成しました: {product_name} ({product_number})")
                                 
                                 import_count += 1
                                 
@@ -322,115 +369,107 @@ class CSVImporterView(View):
         logger.error("すべてのエンコーディングでファイルを読み込めませんでした")
         return import_count, error_count, skipped_list
     
-    def _get_column_indices(self, headers):
-        """列ヘッダーから列インデックスを特定する"""
-        indices = {
-            'manufacturing_filling': -1,  # 製造/充填
-            'date': -1,                   # 生産日
-            'work_center': -1,            # ﾜｰｸｾﾝﾀｰ 番号
-            'work_center_name': -1,       # ﾜｰｸｾﾝﾀｰ名
-            'product_number': -1,         # 品番
-            'product_name': -1,           # 品名
-            'quantity': -1,               # 生産 予定数
-            'personnel': -1,              # 人員
-            'order_number': -1,           # ｵｰﾀﾞｰ No.
-            'status': -1                  # Work Order Status
-        }
-        
-        # 各列を特定
-        for i, header in enumerate(headers):
-            header_lower = header.lower() if header else ""
-            
-            if "充填" in header_lower or "製造" in header_lower:
-                indices['manufacturing_filling'] = i
-            elif "生産日" in header_lower:
-                indices['date'] = i
-            elif "ﾜｰｸｾﾝﾀｰ" in header_lower and "番号" in header_lower:
-                indices['work_center'] = i
-            elif "ﾜｰｸｾﾝﾀｰ名" in header_lower:
-                indices['work_center_name'] = i
-            elif "品番" in header_lower:
-                indices['product_number'] = i
-            elif "品名" in header_lower:
-                indices['product_name'] = i
-            elif "予定数" in header_lower or "生産数" in header_lower:
-                indices['quantity'] = i
-            elif "人員" in header_lower:
-                indices['personnel'] = i
-            elif "ｵｰﾀﾞｰ" in header_lower or "オーダー" in header_lower:
-                indices['order_number'] = i
-            elif "status" in header_lower or "ステータス" in header_lower:
-                indices['status'] = i
-        
-        # 見つからなかった場合は一般的な位置を使用
-        if indices['manufacturing_filling'] == -1:
-            indices['manufacturing_filling'] = 0
-        
-        if indices['date'] == -1:
-            indices['date'] = 1
-        
-        if indices['work_center'] == -1:
-            indices['work_center'] = 2
-        
-        if indices['work_center_name'] == -1:
-            indices['work_center_name'] = 3
-        
-        if indices['product_number'] == -1:
-            indices['product_number'] = 4
-        
-        if indices['product_name'] == -1:
-            indices['product_name'] = 5
-        
-        if indices['quantity'] == -1:
-            indices['quantity'] = 6
-        
-        if indices['personnel'] == -1:
-            indices['personnel'] = 7
-        
-        if indices['order_number'] == -1:
-            indices['order_number'] = 8
-        
-        if indices['status'] == -1:
-            indices['status'] = 9
-        
-        return indices
-    
     def _safe_get_value(self, row, index):
         """行から安全に値を取得する"""
         try:
-            return row[index].strip() if index >= 0 and index < len(row) else ""
-        except IndexError:
+            if index < 0:
+                logger.debug(f"無効なインデックス {index} を取得しようとしました")
+                return ""
+                
+            if index >= len(row):
+                logger.debug(f"範囲外のインデックス {index} を取得しようとしました（行の長さ: {len(row)}）")
+                return ""
+                
+            value = row[index]
+            
+            # None値や空文字列を処理
+            if value is None:
+                return ""
+                
+            # 文字列に変換して空白を削除
+            str_value = str(value).strip()
+            
+            return str_value
+        except Exception as e:
+            logger.exception(f"値の取得中にエラー: インデックス {index}, エラー: {e}")
             return ""
     
     def _parse_date(self, date_str):
         """日付文字列をDateオブジェクトに変換する"""
         if not date_str:
+            logger.warning("空の日付文字列が渡されました")
             return None
         
-        # さまざまな日付形式に対応
+        # 前処理: 空白を削除、スラッシュを標準化
+        date_str = date_str.strip()
+        date_str = date_str.replace('／', '/')  # 全角スラッシュを半角に
+        
+        logger.debug(f"日付パース開始: '{date_str}'")
+        
+        # YYYY/M/D形式に特化したパース処理
+        if '/' in date_str:
+            parts = date_str.split('/')
+            if len(parts) == 3:
+                try:
+                    year = int(parts[0])
+                    month = int(parts[1])
+                    day = int(parts[2])
+                    
+                    # 年が2桁の場合は2000年代として解釈
+                    if year < 100:
+                        year += 2000
+                    
+                    logger.debug(f"日付パース: 年={year}, 月={month}, 日={day}")
+                    
+                    # 日付の妥当性チェック
+                    if 1 <= month <= 12 and 1 <= day <= 31:
+                        try:
+                            result = datetime(year, month, day).date()
+                            logger.debug(f"日付パース成功: '{date_str}' → {result}")
+                            return result
+                        except ValueError as e:
+                            logger.warning(f"無効な日付: {year}/{month}/{day} - {e}")
+                    else:
+                        logger.warning(f"月または日の値が範囲外です: 月={month}, 日={day}")
+                except ValueError:
+                    logger.warning(f"日付の数値変換に失敗: {parts}")
+        
+        # 上記の処理で失敗した場合、汎用的な方法を試す
         date_formats = [
-            '%Y/%m/%d',  # 例: 2025/3/31
-            '%Y/%m/%d',  # 例: 2025/03/31
-            '%y/%m/%d',  # 例: 25/3/31
-            '%y/%m/%d',  # 例: 25/03/31
-            '%Y-%m-%d',  # 例: 2025-03-31
-            '%Y%m%d',    # 例: 20250331
+            ('%Y/%m/%d', "YYYY/MM/DD形式"),  # 例: 2025/03/31
+            ('%Y/%m/%d', "YYYY/M/D形式"),   # 例: 2025/3/31
+            ('%y/%m/%d', "YY/MM/DD形式"),   # 例: 25/03/31
+            ('%y/%m/%d', "YY/M/D形式"),     # 例: 25/3/31
+            ('%Y-%m-%d', "YYYY-MM-DD形式"), # 例: 2025-03-31
+            ('%Y%m%d', "YYYYMMDD形式"),     # 例: 20250331
         ]
         
-        for date_format in date_formats:
+        for date_format, format_name in date_formats:
             try:
-                return datetime.strptime(date_str, date_format).date()
+                result = datetime.strptime(date_str, date_format).date()
+                logger.debug(f"日付パース成功: '{date_str}' → {result} ({format_name})")
+                return result
             except ValueError:
+                logger.debug(f"日付パース失敗: '{date_str}' は {format_name} ではありません")
                 continue
         
         # すべての形式が失敗した場合
         logger.warning(f"日付 '{date_str}' を解析できませんでした")
+        
+        # 追加のトラブルシューティング
+        logger.debug(f"日付文字列の長さ: {len(date_str)}")
+        logger.debug(f"日付文字列の各文字のコード: {[ord(c) for c in date_str]}")
+        
         return None
     
     def _get_or_create_work_center(self, work_center_id):
         """ワークセンターを取得または作成する"""
         if not work_center_id:
+            logger.warning("空のワークセンターIDが渡されました")
             return None
+        
+        # 前処理：空白を削除
+        work_center_id = work_center_id.strip()
         
         try:
             # 既存のワークセンターを検索
@@ -438,19 +477,19 @@ class CSVImporterView(View):
         except WorkCenter.DoesNotExist:
             # ワークセンター情報のマッピング
             work_center_info = {
-                "200100": {"name": "JP1", "color": "#952bff"},
-                "200201": {"name": "2A", "color": "#f21c36"},
-                "200200": {"name": "2B", "color": "#ff68b4"},
-                "200202": {"name": "2C", "color": "#ff68b4"},
-                "200300": {"name": "JP3", "color": "#44df60"},
-                "200400": {"name": "JP4", "color": "#00c6c6"},
-                "200601": {"name": "6A", "color": "#9b88b9"},
-                "200602": {"name": "6B", "color": "#9b88b9"},
-                "200603": {"name": "6D", "color": "#9b88b9"},
-                "200700": {"name": "7A/7B", "color": "#3c2dff"},
-                "200800": {"name": "JP8", "color": "#cccccc"},
-                "200900": {"name": "JP9", "color": "#cccccc"},
-                "300100": {"name": "外注", "color": "#999999"},
+                "200100": {"name": "JP1", "color": "#952bff", "order": 1},
+                "200201": {"name": "2A", "color": "#f21c36", "order": 2},
+                "200200": {"name": "2B", "color": "#ff68b4", "order": 3},
+                "200202": {"name": "2C", "color": "#ff68b4", "order": 4},
+                "200300": {"name": "JP3", "color": "#44df60", "order": 5},
+                "200400": {"name": "JP4", "color": "#00c6c6", "order": 6},
+                "200601": {"name": "6A", "color": "#9b88b9", "order": 7},
+                "200602": {"name": "6B", "color": "#9b88b9", "order": 8},
+                "200603": {"name": "6D", "color": "#9b88b9", "order": 9},
+                "200700": {"name": "7A/7B", "color": "#3c2dff", "order": 10},
+                "200800": {"name": "JP8", "color": "#cccccc", "order": 11},
+                "200900": {"name": "JP9", "color": "#cccccc", "order": 12},
+                "300100": {"name": "外注", "color": "#999999", "order": 13},
             }
             
             # 既知のワークセンターか確認
@@ -460,7 +499,7 @@ class CSVImporterView(View):
                     name=work_center_id,
                     display_name=info["name"],
                     color=info["color"],
-                    order=list(work_center_info.keys()).index(work_center_id) + 1
+                    order=info["order"]
                 )
                 logger.info(f"新しいワークセンターを作成しました: {info['name']} ({work_center_id})")
                 return work_center
@@ -472,7 +511,7 @@ class CSVImporterView(View):
                     color="#CCCCCC",
                     order=999
                 )
-                logger.info(f"未知のワークセンターを作成しました: {work_center_id}")
+                logger.warning(f"未知のワークセンターを作成しました: {work_center_id}")
                 return work_center
 
 csv_importer_view = CSVImporterView.as_view()
