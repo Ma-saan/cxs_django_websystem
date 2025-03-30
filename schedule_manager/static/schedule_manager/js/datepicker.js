@@ -39,32 +39,27 @@ $(document).ready(function() {
     });
     
     // 共有datepickerの初期化
-    $container.datepicker({
-        onSelect: function(dateText) {
-            console.log('日付選択:', dateText);
-            const date = $(this).datepicker('getDate');
+$container.datepicker({
+    onSelect: function(dateText) {
+        console.log('日付選択:', dateText);
+        const date = $(this).datepicker('getDate');
+        
+        // アクティブな側（左/右）を判断
+        const activeSide = $container.data('active-side');
+        if (activeSide) {
+            $(`#${activeSide}-date`).text(formatDate(date));
             
-            // アクティブな側（左/右）を判断
-            const activeSide = $container.data('active-side');
-            if (activeSide) {
-                $(`#${activeSide}-date`).text(formatDate(date));
-                
-                // 選択された日付の予定を表示（左側の場合）
-                if (activeSide === 'left' && window.selectedDate !== undefined) {
-                    console.log('ボードデータ更新用の日付設定:', date);
-                    window.selectedDate = date;
-                    
-                    // 既存の関数を利用（存在する場合）
-                    if (typeof window.loadBoardData === 'function') {
-                        window.loadBoardData();
-                    }
-                }
-            }
-            
-            // 選択後に閉じる
-            $container.hide();
+            // カスタムイベントを発行
+            $(document).trigger('datepicker:dateSelected', {
+                date: date,
+                side: activeSide
+            });
         }
-    });
+        
+        // 選択後に閉じる
+        $container.hide();
+    }
+});
     
     // カレンダーアイコンクリックイベント
     $('.calendar-icon').on('click', function(e) {
@@ -81,7 +76,7 @@ $(document).ready(function() {
         // datepickerの表示位置を設定
         $container.css({
             top: (iconPos.top + $(this).outerHeight()) + 'px',
-            left: iconPos.left + 'px',
+            left: (iconPos.left - 300) + 'px',
             display: 'block'
         });
         

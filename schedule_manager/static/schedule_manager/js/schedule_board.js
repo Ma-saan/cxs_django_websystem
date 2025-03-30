@@ -543,6 +543,16 @@ const ScheduleBoard = (function() {
     
     // 初期化
     function init() {
+        // schedule_board.jsのinit関数内に追加
+$(document).on('datepicker:dateSelected', function(e, data) {
+    if (data.side === 'left') {
+        leftSelectedDate = data.date;
+        loadBoardData('left');
+    } else if (data.side === 'right') {
+        rightSelectedDate = data.date;
+        loadBoardData('right');
+    }
+});
         
         // ボード初期化
         initBoard();

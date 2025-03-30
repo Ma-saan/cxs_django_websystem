@@ -19,7 +19,7 @@
         <select id="lineFilter" onchange="filterByLine(this.value)">
             <option value="">全て表示</option>
             {% for line in production_lines %}
-            <option value="{{ line }}" {% if current_line == line %}selected{% endif %}>{{ line }}</option>
+            <option value="{{ line }}" {% if current_line = line %}selected{% endif %}>{{ line }}</option>
             {% endfor %}
         </select>
     </div>
