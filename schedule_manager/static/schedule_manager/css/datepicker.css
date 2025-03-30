@@ -1,0 +1,104 @@
+/* datepicker.css - カレンダーアイコンと日付選択のスタイル（最終修正版） */
+
+/* カレンダーアイコンとヘッダーのスタイル */
+.date-header {
+    background-color: #e9ecef;
+    padding: 10px 15px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.date-header h3 {
+    margin: 0;
+    font-size: 16px;
+    flex-grow: 1;
+}
+
+.calendar-icon {
+    cursor: pointer;
+    color: #007bff;
+    font-size: 18px;
+    padding: 5px 0 5px 10px;
+    transition: color 0.2s;
+}
+
+.calendar-icon:hover {
+    color: #0056b3;
+}
+
+/* カスタムdatepickerコンテナのスタイル */
+#external-datepicker-container {
+    padding: 0;
+    font-size: 14px;
+    width: 300px;
+    border: 1px solid #ddd;
+}
+
+/* jQuery UI Datepicker カスタマイズ */
+.ui-datepicker {
+    width: 100% !important;
+    padding: 0 !important;
+}
+
+.ui-datepicker-header {
+    background-color: #007bff !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 0 !important;
+}
+
+.ui-datepicker-title {
+    font-weight: normal !important;
+    padding: 6px !important;
+}
+
+.ui-datepicker-prev, .ui-datepicker-next {
+    top: 5px !important;
+}
+
+.ui-datepicker-calendar {
+    margin: 0 !important;
+}
+
+.ui-datepicker th {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+    padding: 5px !important;
+}
+
+.ui-datepicker td {
+    padding: 0 !important;
+    border: none !important;
+}
+
+.ui-datepicker td a.ui-state-default {
+    background: white !important;
+    border: 1px solid #f8f9fa !important;
+    text-align: center;
+    margin: 1px !important;
+    padding: 5px !important;
+}
+
+.ui-datepicker td a.ui-state-default:hover {
+    background-color: #e9f5ff !important;
+    border-color: #cce5ff !important;
+}
+
+.ui-datepicker td a.ui-state-default.ui-state-highlight {
+    background-color: #e8f4ff !important;
+    border-color: #007bff !important;
+}
+
+.ui-datepicker td a.ui-state-default.ui-state-active {
+    background-color: #cce5ff !important;
+    color: #007bff !important;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    #external-datepicker-container {
+        width: 260px;
+    }
+}

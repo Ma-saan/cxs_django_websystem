@@ -66,73 +66,6 @@ const ScheduleBoard = (function() {
         return `${year}年${month}月${day}日(${weekday})`;
     }
     
-    // カレンダー初期化
-    function initCalendars() {
-        // 日本語化設定
-        $.datepicker.regional['ja'] = {
-            closeText: '閉じる',
-            prevText: '<前',
-            nextText: '次>',
-            currentText: '今日',
-            monthNames: ['1月','2月','3月','4月','5月','6月',
-                         '7月','8月','9月','10月','11月','12月'],
-            monthNamesShort: ['1月','2月','3月','4月','5月','6月',
-                              '7月','8月','9月','10月','11月','12月'],
-            dayNames: ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'],
-            dayNamesShort: ['日','月','火','水','木','金','土'],
-            dayNamesMin: ['日','月','火','水','木','金','土'],
-            weekHeader: '週',
-            dateFormat: 'yy/mm/dd',
-            firstDay: 0,
-            isRTL: false,
-            showMonthAfterYear: true,
-            yearSuffix: '年'
-        };
-        $.datepicker.setDefaults($.datepicker.regional['ja']);
-        
-        // 左カレンダー初期化
-        $("#left-datepicker").datepicker({
-            onSelect: function(dateText, inst) {
-                const selectedDate = $(this).datepicker('getDate');
-                
-                // 表示用フォーマット
-                const displayDate = formatDateForDisplay(selectedDate);
-                $("#left-date").text(displayDate);
-                $("#left-selected-date").text(displayDate);
-                
-                // ボードデータ更新
-                leftSelectedDate = selectedDate;  // グローバル変数に保存
-                loadBoardData('left');
-            }
-        });
-        
-        // 右カレンダー初期化
-        $("#right-datepicker").datepicker({
-            onSelect: function(dateText, inst) {
-                const selectedDate = $(this).datepicker('getDate');
-                
-                // 表示用フォーマット
-                const displayDate = formatDateForDisplay(selectedDate);
-                $("#right-date").text(displayDate);
-                $("#right-selected-date").text(displayDate);
-                
-                // ボードデータ更新
-                rightSelectedDate = selectedDate;  // グローバル変数に保存
-                loadBoardData('right');
-            }
-        });
-        
-        // 初期表示として今日の日付を設定（左カレンダー）
-        const today = new Date();
-        $("#left-datepicker").datepicker("setDate", today);
-        leftSelectedDate = today;
-        $("#left-date").text(formatDateForDisplay(today));
-        $("#left-selected-date").text(formatDateForDisplay(today));
-        
-        // 日付が選択されていない状態でも正しく表示されるようにする
-        loadBoardData('left');
-    }
-    
     // ボード初期化
     function initBoard() {
         const leftBoard = $('#board-left .production-lines');
@@ -610,8 +543,6 @@ const ScheduleBoard = (function() {
     
     // 初期化
     function init() {
-        // カレンダー初期化
-        initCalendars();
         
         // ボード初期化
         initBoard();

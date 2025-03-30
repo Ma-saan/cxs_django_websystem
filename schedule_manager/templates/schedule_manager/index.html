@@ -5,8 +5,10 @@
 {% csrf_token %}
 <link rel="stylesheet" href="{% static 'schedule_manager/css/schedule_board.css' %}">
 <link rel="stylesheet" href="{% static 'schedule_manager/css/product_cards.css' %}">
+<link rel="stylesheet" href="{% static 'schedule_manager/css/datepicker.css' %}">
 <!-- jQuery UI スタイルシート -->
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
 <div class="schedule-container">
     <div class="schedule-header">
@@ -20,22 +22,12 @@
     
     <div class="container-flex">
         <!-- 左カラム -->
-        <div class="board-column">
-            <!-- 左カレンダー -->
-            <div class="calendar-container" id="left-calendar-container">
-                <div class="calendar-title">
-                    <h3>左ボード日付選択</h3>
-                </div>
-                <div class="calendar-widget">
-                    <input type="text" id="left-datepicker" class="datepicker-input" readonly>
-                </div>
-                <div id="left-selected-date" class="selected-date-display"></div>
-            </div>
-            
+        <div class="board-column">            
             <!-- 左ボード -->
             <div id="board-left" class="production-side">
                 <div class="date-header">
-                    <h3 id="left-date">左カレンダーから日付を選択</h3>
+                    <h3 id="left-date">日付を選択してください</h3>
+                    <span class="fa fa-calendar calendar-icon" id="left-calendar-trigger"></span>
                 </div>
                 <div class="production-lines">
                     <!-- ラインとカードはJSで生成 -->
@@ -45,21 +37,11 @@
         
         <!-- 右カラム -->
         <div class="board-column">
-            <!-- 右カレンダー -->
-            <div class="calendar-container" id="right-calendar-container">
-                <div class="calendar-title">
-                    <h3>右ボード日付選択</h3>
-                </div>
-                <div class="calendar-widget">
-                    <input type="text" id="right-datepicker" class="datepicker-input" readonly>
-                </div>
-                <div id="right-selected-date" class="selected-date-display"></div>
-            </div>
-            
             <!-- 右ボード -->
             <div id="board-right" class="production-side">
                 <div class="date-header">
-                    <h3 id="right-date">右カレンダーから日付を選択</h3>
+                    <h3 id="right-date">日付未選択</h3>
+                    <span class="fa fa-calendar calendar-icon" id="right-calendar-trigger"></span>
                 </div>
                 <div class="production-lines">
                     <!-- ラインとカードはJSで生成 -->
@@ -122,6 +104,8 @@
 <script src="{% static 'schedule_manager/js/schedule_board.js' %}"></script>
 <script src="{% static 'schedule_manager/js/product_cards.js' %}"></script>
 <script src="{% static 'schedule_manager/js/schedule_manager_utils.js' %}"></script>
+<script src="{% static 'schedule_manager/js/datepicker.js' %}"></script>
+
 <script src="{% static 'schedule_manager/js/schedule_debug_helper.js' %}"></script>
 
 {% endblock %}
