@@ -13,7 +13,5 @@ urlpatterns = [
     path('', views.ScheduleManagerView.as_view(), name='index'),
     path('api/', include(router.urls)),
     path('import-csv/', csv_importer.csv_importer_view, name='import_csv'),
-    path('api/save-to-db/', views.DatabaseSyncView.as_view(), name='save_to_db'),
-    path('api/load-from-db/', views.DatabaseSyncView.as_view(), name='load_from_db'),
     path('api/schedules/update-position/', views.SchedulePositionUpdateView.as_view(), name='position_update'),
 ]

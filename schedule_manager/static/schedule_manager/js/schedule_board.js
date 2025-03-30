@@ -224,15 +224,6 @@ const ScheduleBoard = (function() {
         createLines(leftBoard);
         createLines(rightBoard);
         
-        // DB保存ボタン
-        $('#save-to-db').on('click', function() {
-            saveToDatabase();
-        });
-        
-        // DB読込ボタン
-        $('#load-from-db').on('click', function() {
-            loadFromDatabase();
-        });
     }
     
     // ボードデータ読み込み
@@ -680,43 +671,6 @@ function createCardElement(card, side) {
         if (card) {
             card[attribute] = value;
         }
-    }
-    
-    // データベースへの保存
-    function saveToDatabase() {
-        $.ajax({
-            url: '/schedule_manager/api/save-to-db/',
-            type: 'POST',
-            headers: {
-                'X-CSRFToken': getCsrfToken()
-            },
-            success: function(data) {
-                alert('データベースへの保存が完了しました');
-            },
-            error: function(xhr, status, error) {
-                console.error('DB保存エラー:', error);
-                alert('データベースへの保存に失敗しました');
-            }
-        });
-    }
-    
-    // データベースからの読み込み
-    function loadFromDatabase() {
-        $.ajax({
-            url: '/schedule_manager/api/load-from-db/',
-            type: 'GET',
-            success: function(data) {
-                alert('データベースからの読み込みが完了しました');
-                // 表示を更新
-                if (selectedDate) {
-                    loadBoardData();
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('DB読込エラー:', error);
-                alert('データベースからの読み込みに失敗しました');
-            }
-        });
     }
     
     // 初期化
