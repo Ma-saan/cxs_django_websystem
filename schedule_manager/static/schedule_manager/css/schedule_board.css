@@ -18,15 +18,28 @@
     gap: 10px;
 }
 
+/* 2カラムレイアウト */
 .container-flex {
     display: flex;
     gap: 20px;
 }
 
+/* 左右のボードカラム */
+.board-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* flexboxの子要素が親コンテナをはみ出さないようにする */
+}
+
 /* カレンダー部分 */
 .calendar-container {
-    width: 350px;
-    flex-shrink: 0;
+    width: 100%;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    background-color: #f8f9fa;
 }
 
 .calendar-controls {
@@ -68,18 +81,15 @@
 }
 
 /* 生産管理ボード */
-.schedule-data {
-    flex: 1;
-    display: flex;
-    gap: 15px;
-}
-
 .production-side {
     flex: 1;
     border: 1px solid #ddd;
     border-radius: 5px;
     background-color: #f8f9fa;
     overflow: hidden;
+    min-height: 500px; /* 最低限の高さを確保 */
+    display: flex;
+    flex-direction: column;
 }
 
 .date-header {
@@ -98,6 +108,8 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+    overflow-y: auto; /* スクロール可能に */
+    flex: 1; /* 残りのスペースを埋める */
 }
 
 /* ライン表示 */
@@ -107,6 +119,7 @@
     border-radius: 4px;
     overflow: hidden;
     background-color: white;
+    margin-bottom: 10px;
 }
 
 .line-header {
@@ -257,4 +270,72 @@
 
 .color-swatch:hover {
     transform: scale(1.1);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 1200px) {
+    .container-flex {
+        flex-direction: column;
+    }
+    
+    .board-column {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .line-container {
+        width: 100%;
+    }
+}
+
+.datepicker-input {
+    width: 100%;
+    padding: 8px;
+    text-align: center;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.calendar-title {
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.calendar-widget {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.selected-date-display {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #007bff;
+}
+
+/* DatepickerのUI調整 */
+.ui-datepicker {
+    width: 100%;
+    max-width: 350px;
+    margin: 0 auto;
+    font-size: 14px;
+}
+
+.ui-datepicker .ui-datepicker-header {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+}
+
+.ui-datepicker .ui-datepicker-title {
+    font-weight: bold;
+}
+
+.ui-datepicker-calendar .ui-state-active {
+    background-color: #cce5ff !important;
+    border-color: #007bff !important;
 }

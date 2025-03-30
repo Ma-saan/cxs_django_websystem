@@ -5,6 +5,8 @@
 {% csrf_token %}
 <link rel="stylesheet" href="{% static 'schedule_manager/css/schedule_board.css' %}">
 <link rel="stylesheet" href="{% static 'schedule_manager/css/product_cards.css' %}">
+<!-- jQuery UI スタイルシート -->
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 
 <div class="schedule-container">
     <div class="schedule-header">
@@ -13,38 +15,51 @@
             <a href="{% url 'schedule_manager:import_csv' %}" class="btn btn-primary">
                 <i class="fa fa-upload"></i> 予定表CSVインポート
             </a>
-
         </div>
     </div>
     
     <div class="container-flex">
-        <!-- カレンダー表示部分 -->
-        <div class="calendar-container">
-            <div class="calendar-controls">
-                <button id="prev-month" class="btn btn-outline">前月</button>
-                <h2 id="current-month">2025年3月</h2>
-                <button id="next-month" class="btn btn-outline">次月</button>
+        <!-- 左カラム -->
+        <div class="board-column">
+            <!-- 左カレンダー -->
+            <div class="calendar-container" id="left-calendar-container">
+                <div class="calendar-title">
+                    <h3>左ボード日付選択</h3>
+                </div>
+                <div class="calendar-widget">
+                    <input type="text" id="left-datepicker" class="datepicker-input" readonly>
+                </div>
+                <div id="left-selected-date" class="selected-date-display"></div>
             </div>
             
-            <div class="calendar-grid" id="calendar-grid">
-                <!-- カレンダーグリッドはJavaScriptで生成 -->
-            </div>
-        </div>
-        
-        <!-- 生産予定表示エリア -->
-        <div id="production-board" class="schedule-data">
+            <!-- 左ボード -->
             <div id="board-left" class="production-side">
                 <div class="date-header">
-                    <h3 id="left-date">日付を選択してください</h3>
+                    <h3 id="left-date">左カレンダーから日付を選択</h3>
                 </div>
                 <div class="production-lines">
                     <!-- ラインとカードはJSで生成 -->
                 </div>
             </div>
+        </div>
+        
+        <!-- 右カラム -->
+        <div class="board-column">
+            <!-- 右カレンダー -->
+            <div class="calendar-container" id="right-calendar-container">
+                <div class="calendar-title">
+                    <h3>右ボード日付選択</h3>
+                </div>
+                <div class="calendar-widget">
+                    <input type="text" id="right-datepicker" class="datepicker-input" readonly>
+                </div>
+                <div id="right-selected-date" class="selected-date-display"></div>
+            </div>
             
+            <!-- 右ボード -->
             <div id="board-right" class="production-side">
                 <div class="date-header">
-                    <h3 id="right-date">翌日の予定</h3>
+                    <h3 id="right-date">右カレンダーから日付を選択</h3>
                 </div>
                 <div class="production-lines">
                     <!-- ラインとカードはJSで生成 -->
@@ -99,15 +114,14 @@
     </div>
 </div>
 
-<!-- jQueryとjQuery UI -->
+<!-- jQuery & jQuery UI -->
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
+<!-- アプリケーションスクリプト -->
 <script src="{% static 'schedule_manager/js/schedule_board.js' %}"></script>
 <script src="{% static 'schedule_manager/js/product_cards.js' %}"></script>
 <script src="{% static 'schedule_manager/js/schedule_manager_utils.js' %}"></script>
-
 <script src="{% static 'schedule_manager/js/schedule_debug_helper.js' %}"></script>
-
 
 {% endblock %}

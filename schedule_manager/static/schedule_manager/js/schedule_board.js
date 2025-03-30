@@ -35,8 +35,8 @@ const ScheduleBoard = (function() {
     };
     
     // 状態変数
-    let currentDate = new Date();
-    let selectedDate = null;
+    let leftSelectedDate = null;
+    let rightSelectedDate = null;
     let selectedCard = null;
     let boardData = {
         left: {},
@@ -67,111 +67,70 @@ const ScheduleBoard = (function() {
     }
     
     // カレンダー初期化
-    function initCalendar() {
-        const calendarGrid = $('#calendar-grid');
-        const currentMonthDisplay = $('#current-month');
+    function initCalendars() {
+        // 日本語化設定
+        $.datepicker.regional['ja'] = {
+            closeText: '閉じる',
+            prevText: '<前',
+            nextText: '次>',
+            currentText: '今日',
+            monthNames: ['1月','2月','3月','4月','5月','6月',
+                         '7月','8月','9月','10月','11月','12月'],
+            monthNamesShort: ['1月','2月','3月','4月','5月','6月',
+                              '7月','8月','9月','10月','11月','12月'],
+            dayNames: ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'],
+            dayNamesShort: ['日','月','火','水','木','金','土'],
+            dayNamesMin: ['日','月','火','水','木','金','土'],
+            weekHeader: '週',
+            dateFormat: 'yy/mm/dd',
+            firstDay: 0,
+            isRTL: false,
+            showMonthAfterYear: true,
+            yearSuffix: '年'
+        };
+        $.datepicker.setDefaults($.datepicker.regional['ja']);
         
-        // 曜日のヘッダーを追加
-        const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-        weekdays.forEach(day => {
-            calendarGrid.append(
-                $('<div>').addClass('calendar-day-header').text(day)
-            );
+        // 左カレンダー初期化
+        $("#left-datepicker").datepicker({
+            onSelect: function(dateText, inst) {
+                const selectedDate = $(this).datepicker('getDate');
+                
+                // 表示用フォーマット
+                const displayDate = formatDateForDisplay(selectedDate);
+                $("#left-date").text(displayDate);
+                $("#left-selected-date").text(displayDate);
+                
+                // ボードデータ更新
+                leftSelectedDate = selectedDate;  // グローバル変数に保存
+                loadBoardData('left');
+            }
         });
         
-        // カレンダー更新
-        function updateCalendar() {
-            // 現在の年月を表示
-            currentMonthDisplay.text(
-                `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月`
-            );
-            
-            // 日付部分をクリア (ヘッダーは残す)
-            calendarGrid.children().slice(7).remove();
-            
-            // 月初の日付
-            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            // 月初の曜日（0-6, 0が日曜）
-            const firstDayIndex = firstDay.getDay();
-            
-            // 月末の日付
-            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-            const lastDate = lastDay.getDate();
-            
-            // 前月の末日
-            const prevLastDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
-            const prevLastDate = prevLastDay.getDate();
-            
-            // 前月の日を追加
-            for (let i = firstDayIndex; i > 0; i--) {
-                const dayElement = $('<div>')
-                    .addClass('calendar-day previous-month')
-                    .text(prevLastDate - i + 1)
-                    .css('opacity', '0.5');
-                calendarGrid.append(dayElement);
-            }
-            
-            // 現在の月の日を追加
-            for (let i = 1; i <= lastDate; i++) {
-                const dayElement = $('<div>')
-                    .addClass('calendar-day current-month')
-                    .text(i);
+        // 右カレンダー初期化
+        $("#right-datepicker").datepicker({
+            onSelect: function(dateText, inst) {
+                const selectedDate = $(this).datepicker('getDate');
                 
-                // 今日の日付をハイライト
-                const today = new Date();
-                if (i === today.getDate() && 
-                    currentDate.getMonth() === today.getMonth() && 
-                    currentDate.getFullYear() === today.getFullYear()) {
-                    dayElement.css({
-                        'background-color': '#e8f4ff',
-                        'border-color': '#007bff',
-                        'font-weight': 'bold'
-                    });
-                }
+                // 表示用フォーマット
+                const displayDate = formatDateForDisplay(selectedDate);
+                $("#right-date").text(displayDate);
+                $("#right-selected-date").text(displayDate);
                 
-                // 日付クリック時の処理
-                dayElement.on('click', function() {
-                    // 選択されているすべての日付のハイライトを解除
-                    $('.calendar-day.selected').removeClass('selected').css('background-color', '');
-                    
-                    // この日付をハイライト
-                    dayElement.addClass('selected').css('background-color', '#cce5ff');
-                    
-                    // 選択された日付の予定を表示
-                    selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
-                    loadBoardData();
-                });
-                
-                calendarGrid.append(dayElement);
+                // ボードデータ更新
+                rightSelectedDate = selectedDate;  // グローバル変数に保存
+                loadBoardData('right');
             }
-            
-            // 翌月の日を必要に応じて追加
-            const totalCells = firstDayIndex + lastDate;
-            const remainingCells = 42 - totalCells; // 6行 × 7列
-            
-            for (let i = 1; i <= remainingCells; i++) {
-                const dayElement = $('<div>')
-                    .addClass('calendar-day next-month')
-                    .text(i)
-                    .css('opacity', '0.5');
-                calendarGrid.append(dayElement);
-            }
-        }
-        
-        // 前月ボタンのイベント
-        $('#prev-month').on('click', function() {
-            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-            updateCalendar();
         });
         
-        // 次月ボタンのイベント
-        $('#next-month').on('click', function() {
-            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-            updateCalendar();
-        });
+        // 初期表示として今日の日付を設定（左カレンダー）
+        const today = new Date();
+        $("#left-datepicker").datepicker("setDate", today);
+        leftSelectedDate = today;
+        $("#left-date").text(formatDateForDisplay(today));
+        $("#left-selected-date").text(formatDateForDisplay(today));
         
-        // 初期表示
-        updateCalendar();
+        // 日付が選択されていない状態でも正しく表示されるようにする
+        loadBoardData('left');
     }
     
     // ボード初期化
@@ -223,79 +182,57 @@ const ScheduleBoard = (function() {
         // 両ボードにライン生成
         createLines(leftBoard);
         createLines(rightBoard);
-        
     }
     
     // ボードデータ読み込み
-    function loadBoardData() {
+    function loadBoardData(side) {
+        const selectedDate = side === 'left' ? leftSelectedDate : rightSelectedDate;
         if (!selectedDate) return;
         
-        // 左側のボード（選択日）
-        const leftDate = new Date(selectedDate);
-        $('#left-date').text(formatDateForDisplay(leftDate));
-        
-        // 右側のボード（翌日）
-        const rightDate = new Date(leftDate);
-        rightDate.setDate(rightDate.getDate() + 1);
-        $('#right-date').text(formatDateForDisplay(rightDate));
+        // 日付ヘッダーを更新
+        $(`#${side}-date`).text(formatDateForDisplay(selectedDate));
         
         // データ取得
-        fetchScheduleData('left', leftDate);
-        fetchScheduleData('right', rightDate);
+        fetchScheduleData(side, selectedDate);
     }
     
     // スケジュールデータ取得
-function fetchScheduleData(side, date) {
-    const formattedDate = formatDateForApi(date);
-    
-    console.log(`${side}側のデータを取得: ${formattedDate}`);
-    
-    // APIのwork_centerとクライアントのIDのマッピング
-    const workCenterMapping = {
-        1: '200100',  // JP1
-        2: '200201',  // 2A
-        3: '200200',  // 2B
-        4: '200202',  // 2C
-        5: '200300',  // JP3
-        6: '200400',  // JP4
-        7: '200601',  // 6A
-        8: '200602',  // 6B
-        9: '200700',  // 7A/7B
-        10: '200700', // 予備
-        11: '200700'  // 予備
-    };
-    
-    $.ajax({
-        url: `${API_URL}schedules/?date=${formattedDate}`,
-        type: 'GET',
-        success: function(data) {
-            console.log(`${side}ボードデータ取得成功:`, data);
-            
-            // ライン別にデータをグループ化
-            const groupedData = {};
-            
-            WORK_CENTERS.forEach(workCenter => {
-                // APIから返されるwork_centerの値をマッピング
-                groupedData[workCenter.id] = data.filter(item => {
-                    const itemWorkCenterId = workCenterMapping[item.work_center] || String(item.work_center);
-                    return itemWorkCenterId === workCenter.id;
-                }).sort((a, b) => (a.grid_row - b.grid_row || a.grid_column - b.grid_column));
+    function fetchScheduleData(side, date) {
+        const formattedDate = formatDateForApi(date);
+        
+        console.log(`${side}側のデータを取得: ${formattedDate}`);
+        
+        $.ajax({
+            url: `${API_URL}schedules/?date=${formattedDate}`,
+            type: 'GET',
+            success: function(data) {
+                console.log(`${side}ボードデータ取得成功:`, data);
                 
-                console.log(`${side}ボード / ${workCenter.name}:`, groupedData[workCenter.id].length, '件のカード');
-            });
-            
-            // 状態を更新
-            boardData[side] = groupedData;
-            
-            // ボードを更新
-            updateBoard(side);
-        },
-        error: function(xhr, status, error) {
-            console.error('データ取得エラー:', error);
-            alert('スケジュールデータの取得に失敗しました');
-        }
-    });
-}
+                // ライン別にデータをグループ化
+                const groupedData = {};
+                
+                WORK_CENTERS.forEach(workCenter => {
+                    // APIから返されるwork_centerの値をマッピング
+                    groupedData[workCenter.id] = data.filter(item => {
+                        const itemWorkCenterId = workCenterMapping[item.work_center] || String(item.work_center);
+                        return itemWorkCenterId === workCenter.id;
+                    }).sort((a, b) => (a.grid_row - b.grid_row || a.grid_column - b.grid_column));
+                    
+                    console.log(`${side}ボード / ${workCenter.name}:`, groupedData[workCenter.id].length, '件のカード');
+                });
+                
+                // 状態を更新
+                boardData[side] = groupedData;
+                
+                // ボードを更新
+                updateBoard(side);
+            },
+            error: function(xhr, status, error) {
+                console.error('データ取得エラー:', error);
+                alert('スケジュールデータの取得に失敗しました');
+            }
+        });
+    }
     
     // ボード更新
     function updateBoard(side) {
@@ -326,94 +263,92 @@ function fetchScheduleData(side, date) {
     }
     
     // カード要素の作成
-function createCardElement(card, side) {
-    // console.log('カード作成:', card);
-    
-    let cardColor = card.display_color || '#ffffff';
-    
-    // 色形式の検証と修正
-    if (!cardColor || typeof cardColor !== 'string') {
-        cardColor = '#ffffff'; // デフォルト色
-    } else if (!cardColor.startsWith('#')) {
-        // #が付いていない場合は追加
-        cardColor = '#' + cardColor;
-    }
-    
-    // テキスト色の決定（背景が明るいか暗いかで）
-    const getBrightness = (hexColor) => {
-        try {
-            if (!hexColor || !hexColor.startsWith('#') || hexColor.length < 4) {
-                return 255; // 異常値の場合は黒テキスト
-            }
-            
-            // #RGBを#RRGGBBに変換
-            if (hexColor.length === 4) {
-                const r = hexColor.charAt(1);
-                const g = hexColor.charAt(2);
-                const b = hexColor.charAt(3);
-                hexColor = `#${r}${r}${g}${g}${b}${b}`;
-            }
-            
-            const rgb = parseInt(hexColor.substring(1), 16);
-            const r = (rgb >> 16) & 0xff;
-            const g = (rgb >> 8) & 0xff;
-            const b = (rgb >> 0) & 0xff;
-            return (r * 299 + g * 587 + b * 114) / 1000;
-        } catch (e) {
-            console.warn('色変換エラー:', hexColor, e);
-            return 255; // エラー時は黒テキスト
+    function createCardElement(card, side) {
+        let cardColor = card.display_color || '#ffffff';
+        
+        // 色形式の検証と修正
+        if (!cardColor || typeof cardColor !== 'string') {
+            cardColor = '#ffffff'; // デフォルト色
+        } else if (!cardColor.startsWith('#')) {
+            // #が付いていない場合は追加
+            cardColor = '#' + cardColor;
         }
-    };
-    
-    const textColor = getBrightness(cardColor) > 128 ? '#000000' : '#ffffff';
-    
-    const cardElement = $('<div>')
-        .addClass('product-card')
-        .attr('data-card-id', card.id)
-        .css({
-            'background-color': cardColor,
-            'color': textColor
-        });
-    
-    const nameElement = $('<div>')
-        .addClass('product-name')
-        .text(card.product_name || '名称不明');
-    
-    const detailsElement = $('<div>')
-        .addClass('product-details')
-        .append(
-            $('<span>').addClass('product-number').text(`品番: ${card.product_number || 'なし'}`),
-            $('<span>').addClass('product-quantity').text(`数量: ${card.production_quantity || 0}`)
-        );
-    
-    cardElement.append(nameElement, detailsElement);
-    
-    // 特殊属性の表示（現状のままでOK）
-    if (card.attributes && card.attributes.length > 0) {
-        const attributesElement = $('<div>').addClass('product-attributes');
         
-        card.attributes.forEach(attr => {
-            let attributeText = '';
-            
-            if (attr.attribute_type === 'mixing') attributeText = '↻ 連続撹拌';
-            else if (attr.attribute_type === 'rapid_fill') attributeText = '⚡ 早充依頼';
-            else if (attr.attribute_type === 'special_transfer') attributeText = '⚠️ 特急移庫';
-            else if (attr.attribute_type === 'icon_6b') attributeText = '6B';
-            else if (attr.attribute_type === 'icon_7c') attributeText = '7C';
-            else if (attr.attribute_type === 'icon_2c') attributeText = '2C';
-            
-            if (attributeText) {
-                attributesElement.append(
-                    $('<span>')
-                        .addClass(`product-attribute ${attr.attribute_type}`)
-                        .text(attributeText)
-                );
+        // テキスト色の決定（背景が明るいか暗いかで）
+        const getBrightness = (hexColor) => {
+            try {
+                if (!hexColor || !hexColor.startsWith('#') || hexColor.length < 4) {
+                    return 255; // 異常値の場合は黒テキスト
+                }
+                
+                // #RGBを#RRGGBBに変換
+                if (hexColor.length === 4) {
+                    const r = hexColor.charAt(1);
+                    const g = hexColor.charAt(2);
+                    const b = hexColor.charAt(3);
+                    hexColor = `#${r}${r}${g}${g}${b}${b}`;
+                }
+                
+                const rgb = parseInt(hexColor.substring(1), 16);
+                const r = (rgb >> 16) & 0xff;
+                const g = (rgb >> 8) & 0xff;
+                const b = (rgb >> 0) & 0xff;
+                return (r * 299 + g * 587 + b * 114) / 1000;
+            } catch (e) {
+                console.warn('色変換エラー:', hexColor, e);
+                return 255; // エラー時は黒テキスト
             }
-        });
+        };
         
-        cardElement.append(attributesElement);
-    }
-           
+        const textColor = getBrightness(cardColor) > 128 ? '#000000' : '#ffffff';
+        
+        const cardElement = $('<div>')
+            .addClass('product-card')
+            .attr('data-card-id', card.id)
+            .css({
+                'background-color': cardColor,
+                'color': textColor
+            });
+        
+        const nameElement = $('<div>')
+            .addClass('product-name')
+            .text(card.product_name || '名称不明');
+        
+        const detailsElement = $('<div>')
+            .addClass('product-details')
+            .append(
+                $('<span>').addClass('product-number').text(`品番: ${card.product_number || 'なし'}`),
+                $('<span>').addClass('product-quantity').text(`数量: ${card.production_quantity || 0}`)
+            );
+        
+        cardElement.append(nameElement, detailsElement);
+        
+        // 特殊属性の表示
+        if (card.attributes && card.attributes.length > 0) {
+            const attributesElement = $('<div>').addClass('product-attributes');
+            
+            card.attributes.forEach(attr => {
+                let attributeText = '';
+                
+                if (attr.attribute_type === 'mixing') attributeText = '↻ 連続撹拌';
+                else if (attr.attribute_type === 'rapid_fill') attributeText = '⚡ 早充依頼';
+                else if (attr.attribute_type === 'special_transfer') attributeText = '⚠️ 特急移庫';
+                else if (attr.attribute_type === 'icon_6b') attributeText = '6B';
+                else if (attr.attribute_type === 'icon_7c') attributeText = '7C';
+                else if (attr.attribute_type === 'icon_2c') attributeText = '2C';
+                
+                if (attributeText) {
+                    attributesElement.append(
+                        $('<span>')
+                            .addClass(`product-attribute ${attr.attribute_type}`)
+                            .text(attributeText)
+                    );
+                }
+            });
+            
+            cardElement.append(attributesElement);
+        }
+        
         // コンテキストメニュー
         cardElement.on('contextmenu', function(e) {
             e.preventDefault();
@@ -477,7 +412,7 @@ function createCardElement(card, side) {
                     side: side,
                     lineId: lineId,
                     position: position,
-                    date: formatDateForApi(side === 'left' ? selectedDate : new Date(selectedDate.getTime() + 86400000))
+                    date: formatDateForApi(side === 'left' ? leftSelectedDate : rightSelectedDate)
                 }
             }),
             success: function(data) {
@@ -491,7 +426,7 @@ function createCardElement(card, side) {
                 alert('位置情報の更新に失敗しました');
                 
                 // 元の状態に戻すために再読み込み
-                loadBoardData();
+                loadBoardData(side);
             }
         });
     }
@@ -676,7 +611,7 @@ function createCardElement(card, side) {
     // 初期化
     function init() {
         // カレンダー初期化
-        initCalendar();
+        initCalendars();
         
         // ボード初期化
         initBoard();
@@ -782,14 +717,21 @@ function createCardElement(card, side) {
     // 公開API
     return {
         init: init,
-        // デバッグ機能を追加
+        // デバッグ機能
         debug: {
-            loadDate: function(dateStr) {
+            loadDate: function(dateStr, side = 'left') {
                 const year = parseInt(dateStr.substring(0, 4));
                 const month = parseInt(dateStr.substring(4, 6)) - 1;
                 const day = parseInt(dateStr.substring(6, 8));
-                selectedDate = new Date(year, month, day);
-                loadBoardData();
+                const date = new Date(year, month, day);
+                
+                if (side === 'left') {
+                    leftSelectedDate = date;
+                    loadBoardData('left');
+                } else {
+                    rightSelectedDate = date;
+                    loadBoardData('right');
+                }
                 return true;
             },
             showData: function() {
@@ -819,7 +761,6 @@ function createCardElement(card, side) {
                 
                 return `${side}ボードの${lineId}ラインにテストカードを追加しました`;
             },
-            
             // レイアウト確認
             checkLayout: function() {
                 const leftLines = $('#board-left .production-lines .line-cards');
