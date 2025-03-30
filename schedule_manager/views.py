@@ -86,7 +86,7 @@ class ProductScheduleViewSet(viewsets.ModelViewSet):
             
         return queryset.select_related('work_center').prefetch_related('attributes')
     
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], url_path='update-position')
     def update_position(self, request):
         """位置情報を更新するエンドポイント"""
         serializer = ScheduleUpdateSerializer(data=request.data)
