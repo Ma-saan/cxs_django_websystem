@@ -4,13 +4,14 @@
     margin: 0 auto;
     padding: 20px;
     font-family: 'Meiryo', sans-serif;
+
 }
 
 .schedule-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .action-buttons {
@@ -338,4 +339,162 @@
 .ui-datepicker-calendar .ui-state-active {
     background-color: #cce5ff !important;
     border-color: #007bff !important;
+}
+/* ボード内のレイアウト分割 */
+.board-layout {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    flex: 1;
+    overflow-y: auto; /* スクロール可能に */
+    height: calc(100% - 50px); /* ヘッダー高さを引いた残り */
+}
+
+/* 左側（上下2段エリア）*/
+.layout-left {
+    flex: 0 0 calc(70% - 5px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0; /* flexboxのバグ防止 */
+}
+
+/* 右側（縦長エリア）*/
+.layout-right {
+    flex: 0 0 calc(30% - 5px);
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* flexboxのバグ防止 */
+}
+
+/* エリア共通スタイル */
+.area-horizontal, .area-vertical {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.area-title {
+    font-size: 12px;
+    padding: 5px 10px;
+    margin: 0;
+    background-color: #e9ecef;
+    border-bottom: 1px solid #ddd;
+    color: #495057;
+}
+
+.area-content {
+    padding: 10px;
+    display: flex;
+    min-height: 100px;
+    flex: 1; /* 親コンテナの残りスペースを埋める */
+    overflow-y: auto; /* 内容が多い場合はスクロール */
+}
+
+/* 上段横長エリア */
+.area-horizontal.area-top {
+    flex: 1; /* 上下エリアで均等に分割 */
+    min-height: 200px;
+    max-height: 45%;
+}
+
+/* 下段横長エリア */
+.area-horizontal.area-bottom {
+    flex: 1; /* 上下エリアで均等に分割 */
+    min-height: 200px;
+    max-height: 45%;
+}
+
+/* 右側縦長エリア */
+.area-vertical.area-right {
+    flex: 1;
+    min-height: 450px; /* 上下エリアの高さ合計に近い値 */
+}
+
+/* 上段と下段エリア内のライン配置を水平に */
+.area-horizontal .area-content {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-content: flex-start;
+}
+
+/* 右側縦長エリア内のライン配置を縦に */
+.area-vertical .area-content {
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ラインコンテナのサイズ調整 */
+.area-horizontal .line-container {
+    flex: 0 0 calc(33.333% - 7px); /* 3つ横並び */
+    width: auto;
+    margin-bottom: 0;
+    min-width: 0; /* flexboxのバグ防止 */
+}
+
+.area-vertical .line-container {
+    flex: 0 0 100%;
+    width: auto;
+    min-width: 0; /* flexboxのバグ防止 */
+}
+
+/* 生産管理ボードのスタイル修正 */
+.production-side {
+    display: flex;
+    flex-direction: column;
+    height: 600px; /* 固定高さを設定 */
+    min-height: 600px;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 1400px) {
+    .layout-left {
+        flex: 0 0 calc(65% - 5px);
+    }
+    
+    .layout-right {
+        flex: 0 0 calc(35% - 5px);
+    }
+}
+
+@media (max-width: 1200px) {
+    .container-flex {
+        flex-direction: column;
+    }
+    
+    .board-column {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 992px) {
+    .board-layout {
+        flex-direction: column;
+    }
+    
+    .layout-left, .layout-right {
+        flex: 0 0 100%;
+    }
+    
+    .area-vertical.area-right {
+        min-height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .area-horizontal .line-container {
+        flex: 0 0 calc(50% - 5px); /* 2つ横並び */
+    }
+}
+
+@media (max-width: 576px) {
+    .area-horizontal .line-container {
+        flex: 0 0 100%; /* 1つずつ縦並び */
+    }
 }

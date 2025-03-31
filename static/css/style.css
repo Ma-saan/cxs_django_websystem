@@ -52,7 +52,7 @@
 
 
 .content-block {
-    margin-top: 70px;
+    margin-top: 50px;
     flex: 1; /* メインコンテンツが残りのスペースを占めるようにする */
     padding: 0 .5rem;
 }

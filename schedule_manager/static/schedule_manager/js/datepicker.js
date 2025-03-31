@@ -1,5 +1,5 @@
 /**
- * datepicker.js - カレンダーアイコンによる日付選択機能（最終修正版）
+ * datepicker.js - カレンダーアイコンによる日付選択機能（修正版）
  */
 $(document).ready(function() {
     console.log('datepicker.js: 初期化開始');
@@ -39,27 +39,31 @@ $(document).ready(function() {
     });
     
     // 共有datepickerの初期化
-$container.datepicker({
-    onSelect: function(dateText) {
-        console.log('日付選択:', dateText);
-        const date = $(this).datepicker('getDate');
-        
-        // アクティブな側（左/右）を判断
-        const activeSide = $container.data('active-side');
-        if (activeSide) {
-            $(`#${activeSide}-date`).text(formatDate(date));
+    $container.datepicker({
+        onSelect: function(dateText) {
+            console.log('日付選択:', dateText);
+            const date = $(this).datepicker('getDate');
             
-            // カスタムイベントを発行
-            $(document).trigger('datepicker:dateSelected', {
-                date: date,
-                side: activeSide
-            });
+            // アクティブな側（左/右）を判断
+            const activeSide = $container.data('active-side');
+            if (activeSide) {
+                // 日付表示を更新
+                $(`#${activeSide}-date`).text(formatDate(date));
+                
+                // カスタムイベントを発行
+                $(document).trigger('datepicker:dateSelected', {
+                    date: date,
+                    side: activeSide,
+                    dateText: dateText
+                });
+                
+                console.log(`${activeSide}ボードの日付を ${formatDate(date)} に設定`);
+            }
+            
+            // 選択後に閉じる
+            $container.hide();
         }
-        
-        // 選択後に閉じる
-        $container.hide();
-    }
-});
+    });
     
     // カレンダーアイコンクリックイベント
     $('.calendar-icon').on('click', function(e) {
@@ -72,11 +76,33 @@ $container.datepicker({
         
         // アイコンの位置を取得
         const iconPos = $(this).offset();
+        const iconWidth = $(this).outerWidth();
+        const iconHeight = $(this).outerHeight();
+        
+        // ウィンドウサイズを取得
+        const windowWidth = $(window).width();
+        const windowHeight = $(window).height();
+        
+        // datepickerの幅と高さ（おおよその値）
+        const datepickerWidth = 300;
+        const datepickerHeight = 300;
+        
+        // X位置の計算 - ウィンドウからはみ出ないように調整
+        let leftPos = iconPos.left;
+        if (leftPos + datepickerWidth > windowWidth) {
+            leftPos = Math.max(0, windowWidth - datepickerWidth - 10);
+        }
+        
+        // Y位置の計算 - アイコンの下に表示、はみ出す場合は上に表示
+        let topPos = iconPos.top + iconHeight;
+        if (topPos + datepickerHeight > windowHeight) {
+            topPos = Math.max(0, iconPos.top - datepickerHeight);
+        }
         
         // datepickerの表示位置を設定
         $container.css({
-            top: (iconPos.top + $(this).outerHeight()) + 'px',
-            left: (iconPos.left - 300) + 'px',
+            top: topPos + 'px',
+            left: leftPos + 'px',
             display: 'block'
         });
         
@@ -105,4 +131,31 @@ $container.datepicker({
         const weekday = weekdays[date.getDay()];
         return `${year}年${month}月${day}日(${weekday})`;
     }
+    
+    // 初期日付の自動設定（例：今日）
+    function setInitialDate() {
+        // 保存された日付があればそれを使用、なければ今日の日付
+        const today = new Date();
+        
+        // 左ボードは今日
+        $('#left-date').text(formatDate(today));
+        $(document).trigger('datepicker:dateSelected', {
+            date: today,
+            side: 'left'
+        });
+        
+        // 右ボードは明日
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        $('#right-date').text(formatDate(tomorrow));
+        $(document).trigger('datepicker:dateSelected', {
+            date: tomorrow,
+            side: 'right'
+        });
+    }
+    
+    // ページ読み込み完了後に初期日付を設定
+    $(window).on('load', function() {
+        setTimeout(setInitialDate, 500); // 少し遅延して他のコンポーネントの初期化が完了してから
+    });
 });

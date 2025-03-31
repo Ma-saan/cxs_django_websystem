@@ -18,6 +18,13 @@ const ScheduleBoard = (function() {
         "#ff8000", "#ffd481", "#8080ff", "#ccccff", "#ff80ff", "#ffdcff", 
         "#cb9696", "#a1e6ff", "#b3b3b3", "#ffffff"
     ];
+
+    // ワークセンター配置設定 - 各エリアに配置するラインを定義
+    const WORK_CENTER_LAYOUT = {
+        topArea: ['200100', '200201', '200200'], // 上段エリア: JP1, 2A, 2B
+        bottomArea: ['200300', '200400', '200202'], // 下段エリア: JP3, JP4, 2C
+        rightArea: ['200601', '200602', '200700'] // 右側エリア: 6A, 6B, 7A/7B
+    };
     
     // APIのwork_centerとクライアントのIDのマッピング
     const workCenterMapping = {
@@ -66,56 +73,97 @@ const ScheduleBoard = (function() {
         return `${year}年${month}月${day}日(${weekday})`;
     }
     
-    // ボード初期化
-    function initBoard() {
-        const leftBoard = $('#board-left .production-lines');
-        const rightBoard = $('#board-right .production-lines');
+// ボード初期化関数の修正
+function initBoard() {
+    console.log('ボード初期化開始...');
+    
+    // ボードにライン生成
+    function createLines(side) {
+        const boardSelector = side === 'left' ? '#board-left' : '#board-right';
+        console.log(`${side}ボードのライン生成開始`);
         
-        // ライン生成
-        function createLines(container) {
-            container.empty();
+        // 各エリアの参照を取得
+        const topAreaContent = $(`${boardSelector} .layout-left .area-horizontal.area-top .area-content`);
+        const bottomAreaContent = $(`${boardSelector} .layout-left .area-horizontal.area-bottom .area-content`);
+        const rightAreaContent = $(`${boardSelector} .layout-right .area-vertical.area-right .area-content`);
+        
+        console.log(`エリア要素確認 - 上段エリア:`, topAreaContent.length > 0);
+        console.log(`エリア要素確認 - 下段エリア:`, bottomAreaContent.length > 0);
+        console.log(`エリア要素確認 - 右側エリア:`, rightAreaContent.length > 0);
+        
+        // 各エリアを空にする
+        topAreaContent.empty();
+        bottomAreaContent.empty();
+        rightAreaContent.empty();
+        
+        // エリアごとにラインを生成
+        WORK_CENTERS.forEach(workCenter => {
+            console.log(`ワークセンター [${workCenter.id}] ${workCenter.name} のライン生成`);
             
-            WORK_CENTERS.forEach(workCenter => {
-                const lineContainer = $('<div>')
-                    .addClass('line-container')
-                    .css('border-top', `3px solid ${workCenter.color}`);
-                
-                const lineHeader = $('<div>')
-                    .addClass('line-header')
-                    .css('background-color', workCenter.color)
-                    .text(workCenter.name);
-                
-                const lineCards = $('<div>')
-                    .addClass('line-cards')
-                    .attr('data-line-id', workCenter.id);
-                
-                lineContainer.append(lineHeader, lineCards);
-                container.append(lineContainer);
-                
-                // sortable初期化
-                lineCards.sortable({
-                    connectWith: '.line-cards',
-                    placeholder: 'ui-sortable-placeholder',
-                    update: function(event, ui) {
-                        // ドロップ元から呼ばれないようにする
-                        if (this !== ui.item.parent()[0]) return;
-                        
-                        const cardId = ui.item.data('card-id');
-                        const side = $(this).closest('.production-side').attr('id') === 'board-left' ? 'left' : 'right';
-                        const lineId = $(this).data('line-id');
-                        const newPosition = ui.item.index();
-                        
-                        // APIで位置更新
-                        updateCardPosition(cardId, side, lineId, newPosition);
-                    }
-                }).disableSelection();
-            });
-        }
+            // このワークセンターをどのエリアに配置するか判定
+            let targetArea;
+            if (WORK_CENTER_LAYOUT.topArea.includes(workCenter.id)) {
+                targetArea = topAreaContent;
+                console.log(`${workCenter.name} は上段エリアに配置`);
+            } else if (WORK_CENTER_LAYOUT.bottomArea.includes(workCenter.id)) {
+                targetArea = bottomAreaContent;
+                console.log(`${workCenter.name} は下段エリアに配置`);
+            } else if (WORK_CENTER_LAYOUT.rightArea.includes(workCenter.id)) {
+                targetArea = rightAreaContent;
+                console.log(`${workCenter.name} は右側エリアに配置`);
+            } else {
+                // どのエリアにも該当しない場合はスキップ
+                console.warn(`${workCenter.name} はどのエリアにも配置されません`);
+                return;
+            }
+            
+            // ラインコンテナを作成
+            const lineContainer = $('<div>')
+                .addClass('line-container')
+                .css('border-top', `3px solid ${workCenter.color}`);
+            
+            const lineHeader = $('<div>')
+                .addClass('line-header')
+                .css('background-color', workCenter.color)
+                .text(workCenter.name);
+            
+            const lineCards = $('<div>')
+                .addClass('line-cards')
+                .attr('data-line-id', workCenter.id);
+            
+            lineContainer.append(lineHeader, lineCards);
+            targetArea.append(lineContainer);
+            
+            console.log(`${workCenter.name} ラインコンテナを生成しました`);
+            
+            // sortable初期化
+            lineCards.sortable({
+                connectWith: '.line-cards',
+                placeholder: 'ui-sortable-placeholder',
+                update: function(event, ui) {
+                    // ドロップ元からは呼ばれないようにする
+                    if (this !== ui.item.parent()[0]) return;
+                    
+                    const cardId = ui.item.data('card-id');
+                    const side = $(this).closest('.production-side').attr('id') === 'board-left' ? 'left' : 'right';
+                    const lineId = $(this).data('line-id');
+                    const newPosition = ui.item.index();
+                    
+                    // APIで位置更新
+                    updateCardPosition(cardId, side, lineId, newPosition);
+                }
+            }).disableSelection();
+        });
         
-        // 両ボードにライン生成
-        createLines(leftBoard);
-        createLines(rightBoard);
+        console.log(`${side}ボードのライン生成完了`);
     }
+    
+    // 左右のボードを初期化
+    createLines('left');
+    createLines('right');
+    
+    console.log('ボード初期化完了');
+}
     
     // ボードデータ読み込み
     function loadBoardData(side) {
@@ -167,33 +215,58 @@ const ScheduleBoard = (function() {
         });
     }
     
-    // ボード更新
-    function updateBoard(side) {
-        const boardSelector = side === 'left' ? '#board-left' : '#board-right';
+// ボード更新関数の修正
+function updateBoard(side) {
+    const boardSelector = side === 'left' ? '#board-left' : '#board-right';
+    
+    console.log(`${side}ボードを更新中...`);
+    
+    // 各ラインのカードを更新
+    WORK_CENTERS.forEach(workCenter => {
+        // ワークセンターがどのエリアに属するかを判断
+        let lineSelector;
+        if (WORK_CENTER_LAYOUT.topArea.includes(workCenter.id)) {
+            lineSelector = `${boardSelector} .layout-left .area-horizontal.area-top .area-content .line-cards[data-line-id="${workCenter.id}"]`;
+        } else if (WORK_CENTER_LAYOUT.bottomArea.includes(workCenter.id)) {
+            lineSelector = `${boardSelector} .layout-left .area-horizontal.area-bottom .area-content .line-cards[data-line-id="${workCenter.id}"]`;
+        } else if (WORK_CENTER_LAYOUT.rightArea.includes(workCenter.id)) {
+            lineSelector = `${boardSelector} .layout-right .area-vertical.area-right .area-content .line-cards[data-line-id="${workCenter.id}"]`;
+        } else {
+            console.warn(`${workCenter.name}(${workCenter.id})はどのエリアにも配置されていません`);
+            return;
+        }
         
-        console.log(`${side}ボードを更新中...`);
+        // セレクタでライン要素を取得
+        const lineCards = $(lineSelector);
         
-        // 各ラインのカードを更新
-        WORK_CENTERS.forEach(workCenter => {
-            const lineCards = $(`${boardSelector} .production-lines .line-cards[data-line-id="${workCenter.id}"]`);
-            if (lineCards.length === 0) {
-                console.warn(`ライン要素が見つかりません: ${workCenter.id}`);
-                return;
-            }
-            
-            lineCards.empty();
-            
-            const cards = boardData[side][workCenter.id] || [];
-            console.log(`${side}ボード/${workCenter.name}: ${cards.length}件のカード`);
-            
-            cards.forEach(card => {
-                const cardElement = createCardElement(card, side);
-                lineCards.append(cardElement);
-            });
+        if (lineCards.length === 0) {
+            console.warn(`ライン要素が見つかりません: ${workCenter.id} (セレクタ: ${lineSelector})`);
+            return;
+        }
+        
+        console.log(`${workCenter.name}のライン要素を更新します`);
+        
+        // 現在のライン内のカードをクリア
+        lineCards.empty();
+        
+        const cards = boardData[side][workCenter.id] || [];
+        console.log(`${side}ボード/${workCenter.name}: ${cards.length}件のカード`);
+        
+        // カードがない場合のメッセージ
+        if (cards.length === 0) {
+            lineCards.append('<div class="no-card-message">データがありません</div>');
+            return;
+        }
+        
+        // カードを追加
+        cards.forEach(card => {
+            const cardElement = createCardElement(card, side);
+            lineCards.append(cardElement);
         });
-        
-        console.log(`${side}ボードの更新完了`);
-    }
+    });
+    
+    console.log(`${side}ボードの更新完了`);
+}
     
     // カード要素の作成
     function createCardElement(card, side) {
