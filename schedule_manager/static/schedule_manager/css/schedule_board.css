@@ -1,8 +1,10 @@
 /* 全体レイアウト */
 .schedule-container {
     max-width: 100%;
-    margin: 0 auto;
-    padding: 20px;
+    width: 100%;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
     font-family: 'Meiryo', sans-serif;
 
 }
@@ -22,15 +24,17 @@
 /* 2カラムレイアウト */
 .container-flex {
     display: flex;
+    flex-direction: row; /* 常に横並びを強制 */
+    width: 100%;
     gap: 15px;
 }
 
 /* 左右のボードカラム */
 .board-column {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0; /* flexboxの子要素が親コンテナをはみ出さないようにする */
+    width: 50%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 /* カレンダー部分 */
@@ -83,14 +87,9 @@
 
 /* 生産管理ボード */
 .production-side {
-    flex: 1;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #f8f9fa;
-    overflow: hidden;
-    min-height: 500px; /* 最低限の高さを確保 */
-    display: flex;
-    flex-direction: column;
+    width: 100%;
+    min-height: 600px;
+    box-sizing: border-box;
 }
 
 .date-header {
@@ -115,7 +114,9 @@
 
 /* ライン表示 */
 .line-container {
-    width: calc(50% - 5px);
+    width: 120px;  /* 固定幅を小さく設定 */
+    min-width: 120px;  /* 最小幅も設定 */
+    max-width: 120px;  /* 最大幅も制限 */
     border: 1px solid #ddd;
     border-radius: 4px;
     overflow: hidden;
@@ -142,6 +143,9 @@
     background-color: white;
     border: 1px solid #ddd;
     border-radius: 4px;
+    /* 幅を固定し、コンテンツが広がりすぎないようにする */
+    width: 100%;
+    max-width: 100px;  /* カードの最大幅を制限 */
     cursor: move;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
@@ -273,23 +277,6 @@
     transform: scale(1.1);
 }
 
-/* レスポンシブ対応 */
-@media (max-width: 1200px) {
-    .container-flex {
-        flex-direction: column;
-    }
-    
-    .board-column {
-        width: 100%;
-    }
-}
-
-@media (max-width: 768px) {
-    .line-container {
-        width: 100%;
-    }
-}
-
 .datepicker-input {
     width: 100%;
     padding: 8px;
@@ -379,7 +366,7 @@
 }
 
 .area-title {
-    font-size: 12px;
+    font-size: 10x;
     padding: 5px 10px;
     margin: 0;
     background-color: #e9ecef;
@@ -412,7 +399,7 @@
 /* 右側縦長エリア */
 .area-vertical.area-right {
     flex: 1;
-    min-height: 450px; /* 上下エリアの高さ合計に近い値 */
+    min-height: 400px; /* 上下エリアの高さ合計に近い値 */
 }
 
 /* 上段と下段エリア内のライン配置を水平に */
@@ -425,7 +412,7 @@
 
 /* 右側縦長エリア内のライン配置を縦に */
 .area-vertical .area-content {
-    flex-direction: column;
+    flex-direction: row;
     gap: 10px;
 }
 
@@ -441,60 +428,4 @@
     flex: 0 0 100%;
     width: auto;
     min-width: 0; /* flexboxのバグ防止 */
-}
-
-/* 生産管理ボードのスタイル修正 */
-.production-side {
-    display: flex;
-    flex-direction: column;
-    height: 600px; /* 固定高さを設定 */
-    min-height: 600px;
-}
-
-/* レスポンシブ対応 */
-@media (max-width: 1400px) {
-    .layout-left {
-        flex: 0 0 calc(65% - 5px);
-    }
-    
-    .layout-right {
-        flex: 0 0 calc(35% - 5px);
-    }
-}
-
-@media (max-width: 1200px) {
-    .container-flex {
-        flex-direction: column;
-    }
-    
-    .board-column {
-        width: 100%;
-        margin-bottom: 20px;
-    }
-}
-
-@media (max-width: 992px) {
-    .board-layout {
-        flex-direction: column;
-    }
-    
-    .layout-left, .layout-right {
-        flex: 0 0 100%;
-    }
-    
-    .area-vertical.area-right {
-        min-height: 300px;
-    }
-}
-
-@media (max-width: 768px) {
-    .area-horizontal .line-container {
-        flex: 0 0 calc(50% - 5px); /* 2つ横並び */
-    }
-}
-
-@media (max-width: 576px) {
-    .area-horizontal .line-container {
-        flex: 0 0 100%; /* 1つずつ縦並び */
-    }
 }

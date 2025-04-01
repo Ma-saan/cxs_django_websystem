@@ -20,15 +20,16 @@
         </div>
     </div>
     
-    <div class="container-flex">
-        <!-- 左カラム -->
-        <div class="board-column">            
-            <!-- 左ボード -->
-            <div id="board-left" class="production-side">
-                <div class="date-header">
-                    <h3 id="left-date">日付を選択してください</h3>
-                    <span class="fa fa-calendar calendar-icon" id="left-calendar-trigger"></span>
-                </div>
+    <!-- 修正すべき部分のみ抜粋 -->
+<div class="container-flex">
+    <!-- 左カラム -->
+    <div class="board-column">            
+        <!-- 左ボード -->
+        <div id="board-left" class="production-side">
+            <div class="date-header">
+                <h3 id="left-date">日付を選択してください</h3>
+                <span class="fa fa-calendar calendar-icon" id="left-calendar-trigger"></span>
+            </div>
             <!-- ボード内のレイアウト分割 -->
             <div class="board-layout">
                 <!-- 左側（上下2段エリア） -->
@@ -62,16 +63,16 @@
                 </div>
             </div>
         </div>
-    </div>
-        
-        <!-- 右カラム -->
-        <div class="board-column">
-            <!-- 右ボード -->
-            <div id="board-right" class="production-side">
-                <div class="date-header">
-                    <h3 id="right-date">日付未選択</h3>
-                    <span class="fa fa-calendar calendar-icon" id="right-calendar-trigger"></span>
-                </div>
+    </div> <!-- ここで左カラムが終わる -->
+    
+    <!-- 右カラム -->
+    <div class="board-column">
+        <!-- 右ボード -->
+        <div id="board-right" class="production-side">
+            <div class="date-header">
+                <h3 id="right-date">日付未選択</h3>
+                <span class="fa fa-calendar calendar-icon" id="right-calendar-trigger"></span>
+            </div>
             <!-- ボード内のレイアウト分割 (右側も同様) -->
             <div class="board-layout">
                 <!-- 左側（上下2段エリア） -->
@@ -106,7 +107,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> <!-- container-flexの終了 -->
 
 <!-- コンテキストメニュー -->
 <div id="context-menu" class="context-menu" style="display: none;">
