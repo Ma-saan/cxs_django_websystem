@@ -10,7 +10,7 @@
     justify-content: space-between;
 }
 
-.date-header h3 {
+.date-header h4 {
     margin: 0;
     font-size: 16px;
     flex-grow: 1;
@@ -19,9 +19,8 @@
 .calendar-icon {
     cursor: pointer;
     color: #007bff;
-    font-size: 18px;
-    padding: 5px 0 5px 10px;
-    transition: color 0.2s;
+    font-size: 16px; /* オプション: アイコンサイズも小さくできます */
+    padding: 2px 0 2px 10px; /* パディングも削減 */
 }
 
 .calendar-icon:hover {
