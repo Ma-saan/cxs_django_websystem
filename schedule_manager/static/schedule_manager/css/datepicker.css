@@ -1,26 +1,15 @@
-/* datepicker.css - カレンダーアイコンと日付選択のスタイル（最終修正版） */
+/* ==========================================================================
+   日付選択用スタイル - datepicker.css
+   Schedule Manager 専用 - 日付選択UI要素のみ担当
+========================================================================== */
 
-/* カレンダーアイコンとヘッダーのスタイル */
-.date-header {
-    background-color: #e9ecef;
-    padding: 10px 15px;
-    border-bottom: 1px solid #ddd;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.date-header h4 {
-    margin: 0;
-    font-size: 16px;
-    flex-grow: 1;
-}
-
+/* カレンダーアイコンのスタイル */
 .calendar-icon {
     cursor: pointer;
     color: #007bff;
-    font-size: 16px; /* オプション: アイコンサイズも小さくできます */
-    padding: 2px 0 2px 10px; /* パディングも削減 */
+    font-size: 16px;
+    padding: 2px 0 2px 10px;
+    transition: color 0.2s;
 }
 
 .calendar-icon:hover {
@@ -33,6 +22,9 @@
     font-size: 14px;
     width: 300px;
     border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 9999 !important;
 }
 
 /* jQuery UI Datepicker カスタマイズ */
@@ -99,5 +91,13 @@
 @media (max-width: 768px) {
     #external-datepicker-container {
         width: 260px;
+    }
+    
+    .ui-datepicker {
+        font-size: 12px !important;
+    }
+    
+    .ui-datepicker td a.ui-state-default {
+        padding: 4px !important;
     }
 }

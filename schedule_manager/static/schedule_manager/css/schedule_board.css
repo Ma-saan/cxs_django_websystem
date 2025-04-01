@@ -1,4 +1,7 @@
-/* 全体レイアウト */
+/* ==========================================================================
+   1. レイアウト基本構造
+   コンテナ、グリッド、フレックスボックス基本設定
+========================================================================== */
 .schedule-container {
     max-width: 100%;
     width: 100%;
@@ -10,12 +13,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 5px;
 }
-
 
 .action-buttons {
     display: flex;
-    gap: 10px;
+    gap: 5px;
+    margin-bottom: 5px;
 }
 
 /* 2カラムレイアウト */
@@ -30,56 +34,8 @@
 .board-column {
     flex: 1;
     width: 100%;
-    min-width: 0;
+    min-width: 0; /* flexboxのバグ防止 */
     box-sizing: border-box;
-}
-
-/* カレンダー部分 */
-.calendar-container {
-    width: 100%;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 10px;
-    background-color: #f8f9fa;
-}
-
-.calendar-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-}
-
-.calendar-day-header {
-    text-align: center;
-    font-weight: bold;
-    padding: 8px;
-    background-color: #f0f0f0;
-}
-
-.calendar-day {
-    height: 40px;
-    text-align: center;
-    padding: 8px;
-    cursor: pointer;
-    border: 1px solid #ddd;
-    transition: background-color 0.2s;
-}
-
-.calendar-day:hover {
-    background-color: #e9f0ff;
-}
-
-.calendar-day.selected {
-    background-color: #cce5ff;
-    border-color: #007bff;
 }
 
 /* 生産管理ボード */
@@ -87,28 +43,128 @@
     width: 100%;
     min-height: 600px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;  /* 追加：枠線 */
 }
 
+/* ==========================================================================
+   2. ヘッダーとコントロール
+   アクションボタン、日付ヘッダー（datepickerと連携）
+========================================================================== */
+/* 日付ヘッダーのレイアウト（スタイルはdatepicker.cssへ） */
 .date-header {
     background-color: #e9ecef;
-    padding: 1px;
+    padding: 5px 10px;
     border-bottom: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .date-header h4 {
-    margin-top: 1px;
-    margin-bottom: 1px;
+    margin: 0;
+    font-size: 16px;
+    flex-grow: 1;
 }
 
-.production-lines {
-    padding: 5px;
+/* ==========================================================================
+   3. エリア区分（上段・下段・右側）
+   エリア構造、サイズ、配置
+========================================================================== */
+/* ボード内のレイアウト分割 */
+.board-layout {
     display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
+    gap: 10px;
+    padding: 10px;
+    flex: 1;
     overflow-y: auto; /* スクロール可能に */
-    flex: 1; /* 残りのスペースを埋める */
+    height: calc(100% - 40px); /* ヘッダー高さを引いた残り */
 }
 
+/* 左側（上下2段エリア）*/
+.layout-left {
+    flex: 0 0 calc(70% - 5px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0; /* flexboxのバグ防止 */
+}
+
+/* 右側（縦長エリア）*/
+.layout-right {
+    flex: 0 0 calc(30% - 5px);
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* flexboxのバグ防止 */
+}
+
+/* エリア共通スタイル */
+.area-horizontal, .area-vertical {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.area-title {
+    font-size: 12px;
+    padding: 3px 8px;
+    margin: 0;
+    background-color: #e9ecef;
+    border-bottom: 1px solid #ddd;
+    color: #495057;
+}
+
+.area-content {
+    padding: 10px;
+    display: flex;
+    min-height: 100px;
+    flex: 1; /* 親コンテナの残りスペースを埋める */
+    overflow-y: auto; /* 内容が多い場合はスクロール */
+}
+
+/* 上段横長エリア */
+.area-horizontal.area-top {
+    flex: 1; /* 上下エリアで均等に分割 */
+    min-height: 200px;
+    max-height: 45%;
+}
+
+/* 下段横長エリア */
+.area-horizontal.area-bottom {
+    flex: 1; /* 上下エリアで均等に分割 */
+    min-height: 200px;
+    max-height: 45%;
+}
+
+/* 右側縦長エリア */
+.area-vertical.area-right {
+    flex: 1;
+    min-height: 400px; /* 上下エリアの高さ合計に近い値 */
+}
+
+/* 上段と下段エリア内のライン配置を水平に */
+.area-horizontal .area-content {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-content: flex-start;
+}
+
+/* 右側縦長エリア内のライン配置を縦に */
+.area-vertical .area-content {
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ==========================================================================
+   4. ライン・製品カード
+   ライン表示、カードスタイル、ドラッグ対応
+========================================================================== */
 /* ライン表示 */
 .line-container {
     width: 130px;  /* 固定幅を小さく設定 */
@@ -119,6 +175,20 @@
     overflow: hidden;
     background-color: white;
     margin-bottom: 5px;
+}
+
+/* ラインコンテナのサイズ調整 */
+.area-horizontal .line-container {
+    flex: 0 0 calc(33.333% - 7px); /* 3つ横並び */
+    width: auto;
+    margin-bottom: 0;
+    min-width: 0; /* flexboxのバグ防止 */
+}
+
+.area-vertical .line-container {
+    flex: 0 0 100%;
+    width: auto;
+    min-width: 0; /* flexboxのバグ防止 */
 }
 
 .line-header {
@@ -135,8 +205,8 @@
 
 /* 製品カード */
 .product-card {
-    margin-bottom: 8px;
-    padding: 10px;
+    margin-bottom: 3px;
+    padding: 5px;
     background-color: white;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -145,6 +215,7 @@
     max-width: 120px;  /* カードの最大幅を制限 */
     cursor: move;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: box-shadow 0.2s;
 }
 
 .product-card:hover {
@@ -154,13 +225,18 @@
 .product-name {
     font-weight: bold;
     margin-bottom: 5px;
+    word-break: break-word;
 }
 
 .product-details {
     font-size: 12px;
     color: #666;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
+/* ドラッグ＆ドロップ関連 */
 .ui-sortable-placeholder {
     border: 1px dashed #999;
     background-color: #f8f8f8;
@@ -184,6 +260,26 @@
     border-radius: 3px;
 }
 
+/* 属性タイプ別のスタイル */
+.mixing {
+    background-color: #e6f7ff;
+    color: #0066cc;
+}
+
+.rapid_fill {
+    background-color: #fff7e6;
+    color: #d46b08;
+}
+
+.special_transfer {
+    background-color: #fff1f0;
+    color: #cf1322;
+}
+
+/* ==========================================================================
+   5. モーダル・コンテキストメニュー
+   モーダル、カラーピッカー、コンテキストメニュー
+========================================================================== */
 /* コンテキストメニュー */
 .context-menu {
     position: absolute;
@@ -204,6 +300,7 @@
 .context-menu li {
     padding: 8px 12px;
     cursor: pointer;
+    transition: background-color 0.2s;
 }
 
 .context-menu li:hover {
@@ -268,161 +365,65 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     cursor: pointer;
+    transition: transform 0.2s;
 }
 
 .color-swatch:hover {
     transform: scale(1.1);
 }
 
-.datepicker-input {
-    width: 100%;
-    padding: 8px;
-    text-align: center;
-    font-size: 16px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background-color: #f8f9fa;
-    cursor: pointer;
-    margin-bottom: 10px;
+/* ==========================================================================
+   6. レスポンシブ対応
+   メディアクエリ
+========================================================================== */
+/* タブレット */
+@media (max-width: 992px) {
+    .board-layout {
+        flex-direction: column;
+    }
+    
+    .layout-left, .layout-right {
+        flex: 1 1 auto;
+        width: 100%;
+    }
+    
+    .area-horizontal .line-container {
+        flex: 0 0 calc(50% - 5px); /* 2つ横並び */
+    }
+    
+    .area-content {
+        min-height: 150px;
+    }
 }
 
-.calendar-title {
-    margin-bottom: 10px;
-    text-align: center;
-}
-
-.calendar-widget {
-    width: 100%;
-    margin-bottom: 10px;
-}
-
-.selected-date-display {
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #007bff;
-}
-
-/* DatepickerのUI調整 */
-.ui-datepicker {
-    width: 100%;
-    max-width: 350px;
-    margin: 0 auto;
-    font-size: 14px;
-}
-
-.ui-datepicker .ui-datepicker-header {
-    background-color: #f8f9fa;
-    border: 1px solid #ddd;
-}
-
-.ui-datepicker .ui-datepicker-title {
-    font-weight: bold;
-}
-
-.ui-datepicker-calendar .ui-state-active {
-    background-color: #cce5ff !important;
-    border-color: #007bff !important;
-}
-/* ボード内のレイアウト分割 */
-.board-layout {
-    display: flex;
-    gap: 10px;
-    padding: 10px;
-    flex: 1;
-    overflow-y: auto; /* スクロール可能に */
-    height: calc(100% - 50px); /* ヘッダー高さを引いた残り */
-}
-
-/* 左側（上下2段エリア）*/
-.layout-left {
-    flex: 0 0 calc(70% - 5px);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 0; /* flexboxのバグ防止 */
-}
-
-/* 右側（縦長エリア）*/
-.layout-right {
-    flex: 0 0 calc(30% - 5px);
-    display: flex;
-    flex-direction: column;
-    min-width: 0; /* flexboxのバグ防止 */
-}
-
-/* エリア共通スタイル */
-.area-horizontal, .area-vertical {
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.area-title {
-    font-size: 10x;
-    padding: 5px 10px;
-    margin: 0;
-    background-color: #e9ecef;
-    border-bottom: 1px solid #ddd;
-    color: #495057;
-}
-
-.area-content {
-    padding: 10px;
-    display: flex;
-    min-height: 100px;
-    flex: 1; /* 親コンテナの残りスペースを埋める */
-    overflow-y: auto; /* 内容が多い場合はスクロール */
-}
-
-/* 上段横長エリア */
-.area-horizontal.area-top {
-    flex: 1; /* 上下エリアで均等に分割 */
-    min-height: 200px;
-    max-height: 45%;
-}
-
-/* 下段横長エリア */
-.area-horizontal.area-bottom {
-    flex: 1; /* 上下エリアで均等に分割 */
-    min-height: 200px;
-    max-height: 45%;
-}
-
-/* 右側縦長エリア */
-.area-vertical.area-right {
-    flex: 1;
-    min-height: 400px; /* 上下エリアの高さ合計に近い値 */
-}
-
-/* 上段と下段エリア内のライン配置を水平に */
-.area-horizontal .area-content {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-content: flex-start;
-}
-
-/* 右側縦長エリア内のライン配置を縦に */
-.area-vertical .area-content {
-    flex-direction: row;
-    gap: 10px;
-}
-
-/* ラインコンテナのサイズ調整 */
-.area-horizontal .line-container {
-    flex: 0 0 calc(33.333% - 7px); /* 3つ横並び */
-    width: auto;
-    margin-bottom: 0;
-    min-width: 0; /* flexboxのバグ防止 */
-}
-
-.area-vertical .line-container {
-    flex: 0 0 100%;
-    width: auto;
-    min-width: 0; /* flexboxのバグ防止 */
+/* スマートフォン */
+@media (max-width: 768px) {
+    .container-flex {
+        flex-direction: column;
+    }
+    
+    .board-column {
+        margin-bottom: 20px;
+    }
+    
+    .area-horizontal .line-container {
+        flex: 0 0 100%; /* 縦に1つずつ */
+    }
+    
+    .date-header {
+        padding: 5px;
+    }
+    
+    .date-header h4 {
+        font-size: 14px;
+    }
+    
+    .line-container {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .product-card {
+        max-width: 100%;
+    }
 }
