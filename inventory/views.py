@@ -62,7 +62,11 @@ def product_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, '製品が正常に更新されました。')
-            return redirect('inventory:product_detail', pk=product.pk)
+            # 製品一覧に戻る際、ハイライトパラメータを追加
+            if 'return_to_list' in request.GET:
+                return redirect(f'inventory:product_list?highlight={product.pk}')
+            else:
+                return redirect('inventory:product_detail', pk=product.pk)
     else:
         form = ProductForm(instance=product)
     return render(request, 'inventory/product_form.html', {'form': form, 'product': product, 'title': '製品の編集'})

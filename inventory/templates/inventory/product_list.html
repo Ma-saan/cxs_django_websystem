@@ -3,6 +3,15 @@
 {% block title %}製品一覧{% endblock %}
 
 {% block content %}
+
+
+<style>
+    .highlight-row {
+        background-color: #fff3cd;
+        transition: background-color 2s;
+    }
+</style>
+
 <h1>製品一覧</h1>
 
 <div class="action-buttons">
@@ -42,7 +51,7 @@
     </thead>
     <tbody>
         {% for product in products %}
-        <tr>
+        <tr data-product-id="{{ product.product_id }}">
             <td>{{ product.product_id }}</td>
             <td>{{ product.product_name }}</td>
             <td>{{ product.production_line }}</td>
@@ -99,5 +108,29 @@ function filterByLine(line) {
     // 新しいURLに遷移
     window.location.href = currentUrl.toString();
 }
+
+// 編集項目のハイライト
+document.addEventListener('DOMContentLoaded', function() {
+    // URLからハイライトすべき製品IDを取得
+    const urlParams = new URLSearchParams(window.location.search);
+    const highlightId = urlParams.get('highlight');
+    
+    if (highlightId) {
+        // 該当する製品の行を探す
+        const row = document.querySelector(`tr[data-product-id="${highlightId}"]`);
+        if (row) {
+            // スクロールして表示
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // ハイライト効果を追加
+            row.classList.add('highlight-row');
+            
+            // 少し経ったらハイライトを消す
+            setTimeout(function() {
+                row.classList.remove('highlight-row');
+            }, 3000);
+        }
+    }
+});
 </script>
 {% endblock %}

@@ -33,7 +33,7 @@
     
     <div class="button-container">
         <button type="submit" class="button">保存</button>
-        <a href="{% url 'inventory:product_list' %}" class="button button-secondary">キャンセル</a>
+        <a href="{% url 'inventory:product_list' %}?highlight={{ product.product_id }}" class="button button-secondary">キャンセル</a>
     </div>
 </form>
 {% endblock %}
