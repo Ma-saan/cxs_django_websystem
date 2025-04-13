@@ -1,439 +1,246 @@
 {% load static %}
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>生産スケジュール管理</title>
-    <link rel="stylesheet" href="{% static 'css/jquery-ui.css' %}">
-    <link rel="stylesheet" href="{% static 'css/all.min.css' %}">
-    <link rel="stylesheet" href="{% static 'schedule_manager/css/schedule_board.css' %}">
-    <link rel="stylesheet" href="{% static 'schedule_manager/css/product_cards.css' %}">
-    <link rel="stylesheet" href="{% static 'schedule_manager/css/datepicker.css' %}">
-    
-    <style>
-    /* ページ全体のスタイル */
-    body {
-        margin: 0;
-        padding: 0;
-        font-family: 'Meiryo', sans-serif;
-        background-color: #f4f6f9;
-        overflow: hidden;
-    }
-    
-    /* ページコンテナ */
-    .page-container {
-        position: relative;
-        height: 100vh;
-        width: 100vw;
-        overflow: hidden;
-    }
-    
-    /* サイドバー (真のオーバーレイ型) */
-    .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 40px;
-        height: 100vh;
-        background-color: #2c3e50;
-        color: #ecf0f1;
-        z-index: 1000; /* メインコンテンツより上に表示 */
-        transition: width 0.3s ease;
-        box-shadow: 2px 0 5px rgba(0,0,0,0.2);
-        overflow: hidden;
-    }
-    
-    /* サイドバーを広げた状態 */
-    .sidebar.expanded {
-        width: 220px;
-    }
-    
-    /* サイドバーヘッダー */
-    .sidebar-header {
-        height: 60px;
-        display: flex;
-        align-items: center;
-        background-color: #1a2530;
-        padding-left: 10px;
-        overflow: hidden;
-        white-space: nowrap;
-    }
-    
-    .sidebar-header h3 {
-        margin: 0;
-        font-size: 16px;
-        margin-left: 15px;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-    
-    .sidebar.expanded .sidebar-header h3 {
-        opacity: 1;
-    }
-    
-    /* トグルボタン */
-    .sidebar-toggle {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: none;
-        border: none;
-        color: #ecf0f1;
-        font-size: 22px;
-        cursor: pointer;
-    }
-    
-    /* サイドバーメニュー */
-    .sidebar-menu {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .menu-item {
-        position: relative;
-    }
-    
-    .menu-item a {
-        display: flex;
-        align-items: center;
-        height: 50px;
-        color: #ecf0f1;
-        text-decoration: none;
-        transition: background-color 0.2s ease;
-        padding-left: 10px;
-        overflow: hidden;
-        white-space: nowrap;
-    }
-    
-    .menu-item a:hover {
-        background-color: #34495e;
-    }
-    
-    .menu-item.active a {
-        background-color: #3498db;
-    }
-    
-    .menu-item i {
-        font-size: 18px;
-        width: 40px;
-        text-align: center;
-    }
-    
-    .menu-item .menu-text {
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-    
-    .sidebar.expanded .menu-item .menu-text {
-        opacity: 1;
-    }
-    
-    /* 背景オーバーレイ - サイドバー展開時に表示 */
-    .sidebar-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.3);
-        z-index: 999; /* サイドバーよりも下、メインコンテンツよりも上 */
-        display: none;
-    }
-    
-    .sidebar.expanded ~ .sidebar-backdrop {
-        display: block;
-    }
-    
-    /* メインコンテンツ - 常にフルサイズ */
-    .main-content {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        padding: 15px;
-        box-sizing: border-box;
-        overflow: auto;
-        z-index: 1; /* サイドバーよりも下に表示 */
-    }
-    
-    /* スケジュールボードコンテナ */
-    .container-flex {
-        height: calc(100vh - 30px);
-        width: 100%;
-        display: flex;
-        gap: 5px;
-    }
-    
-    /* モバイル対応 */
-    @media (max-width: 768px) {
-        .sidebar {
-            width: 0;
-            box-shadow: none;
-        }
-        
-        .sidebar.expanded {
-            width: 220px;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
-        }
-        
-        .container-flex {
-            flex-direction: column;
-        }
-        
-        .board-column {
-            width: 100%;
-            margin-bottom: 10px;
-        }
-    }
-    </style>
-</head>
-<body>
-    {% csrf_token %}
-    
-    <div class="page-container">
-        <!-- サイドバー (オーバーレイ型) -->
-        <div id="sidebar" class="sidebar">
-            <div class="sidebar-header">
-                <button id="sidebar-toggle" class="sidebar-toggle">
-                    <i class="fa fa-bars"></i>
-                </button>
-                <h3>メニュー</h3>
-            </div>
-            
-            <ul class="sidebar-menu">
-                <li class="menu-item active">
-                    <a href="{% url 'schedule_manager:index' %}">
-                        <i class="fa fa-calendar"></i>
-                        <span class="menu-text">スケジュール管理</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="{% url 'schedule_manager:import_csv' %}">
-                        <i class="fa fa-upload"></i>
-                        <span class="menu-text">予定表CSV取込</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="{% url 'inventory:index' %}">
-                        <i class="fa fa-box"></i>
-                        <span class="menu-text">在庫管理</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="{% url 'inventory:product_list' %}">
-                        <i class="fa fa-industry"></i>
-                        <span class="menu-text">製品一覧</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="{% url 'inventory:material_list' %}">
-                        <i class="fa fa-flask"></i>
-                        <span class="menu-text">材料一覧</span>
-                    </a>
-                </li>
-            </ul>
+
+{% csrf_token %}
+<link rel="stylesheet" href="{% static 'schedule_manager/css/schedule_board.css' %}">
+<link rel="stylesheet" href="{% static 'schedule_manager/css/product_cards.css' %}">
+<link rel="stylesheet" href="{% static 'schedule_manager/css/datepicker.css' %}">
+<link rel="stylesheet" href="{% static 'schedule_manager/css/sidebar.css' %}">
+<link rel="stylesheet" href="{% static 'css/all.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/jquery-ui.css' %}">
+
+<script src="{% static 'js/jquery.js' %}"></script>
+<script src="{% static 'js/jquery-ui.js' %}"></script>
+
+<!-- フレックスボックスベースのレイアウト構造 -->
+<div class="page-container">
+    <!-- サイドバー -->
+    <div id="sidebar" class="sidebar">
+        <!-- サイドバーヘッダー -->
+        <div class="sidebar-header">
+            <button id="sidebar-toggle" class="sidebar-toggle">
+                <i class="fa fa-bars"></i>
+            </button>
+            <h3>メニュー</h3>
         </div>
         
-        <!-- サイドバー展開時の暗い背景オーバーレイ -->
-        <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
-        
-        <!-- メインコンテンツ - 画面いっぱいに配置 -->
-        <div id="main-content" class="main-content">
-            <!-- スケジュールボード -->
-            <div class="container-flex">
-                <!-- 左カラム -->
-                <div class="board-column">            
-                    <!-- 左ボード -->
-                    <div id="board-left" class="production-side">
-                        <div class="date-header">
-                            <h4 id="left-date">日付を選択してください</h4>
-                            <span class="fa fa-calendar calendar-icon" id="left-calendar-trigger"></span>
-                        </div>
-                        <!-- ボード内のレイアウト分割 -->
-                        <div class="board-layout">
-                            <!-- 左側（上下2段エリア） -->
-                            <div class="layout-left">
-                                <!-- 上段横長エリア -->
-                                <div class="area-horizontal area-top">
-                                    <h4 class="area-title">上段エリア</h4>
-                                    <div class="area-content">
-                                        <!-- ラインコンテナがJSで挿入される -->
-                                    </div>
-                                </div>
-                                
-                                <!-- 下段横長エリア -->
-                                <div class="area-horizontal area-bottom">
-                                    <h4 class="area-title">下段エリア</h4>
-                                    <div class="area-content">
-                                        <!-- ラインコンテナがJSで挿入される -->
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- 右側（縦長エリア） -->
-                            <div class="layout-right">
-                                <!-- 右側縦長エリア -->
-                                <div class="area-vertical area-right">
-                                    <h4 class="area-title">右側エリア</h4>
-                                    <div class="area-content">
-                                        <!-- ラインコンテナがJSで挿入される -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> <!-- ここで左カラムが終わる -->
-                
-                <!-- 右カラム -->
-                <div class="board-column">
-                    <!-- 右ボード -->
-                    <div id="board-right" class="production-side">
-                        <div class="date-header">
-                            <h4 id="right-date">日付を選択してください</h4>
-                            <span class="fa fa-calendar calendar-icon" id="right-calendar-trigger"></span>
-                        </div>
-                        <!-- ボード内のレイアウト分割 (右側も同様) -->
-                        <div class="board-layout">
-                            <!-- 左側（上下2段エリア） -->
-                            <div class="layout-left">
-                                <!-- 上段横長エリア -->
-                                <div class="area-horizontal area-top">
-                                    <h4 class="area-title">上段エリア</h4>
-                                    <div class="area-content">
-                                        <!-- ラインコンテナがJSで挿入される -->
-                                    </div>
-                                </div>
-                                
-                                <!-- 下段横長エリア -->
-                                <div class="area-horizontal area-bottom">
-                                    <h4 class="area-title">下段エリア</h4>
-                                    <div class="area-content">
-                                        <!-- ラインコンテナがJSで挿入される -->
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- 右側（縦長エリア） -->
-                            <div class="layout-right">
-                                <!-- 右側縦長エリア -->
-                                <div class="area-vertical area-right">
-                                    <h4 class="area-title">右側エリア</h4>
-                                    <div class="area-content">
-                                        <!-- ラインコンテナがJSで挿入される -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div> <!-- container-flexの終了 -->
-        </div> <!-- main-contentの終了 -->
-    </div> <!-- page-containerの終了 -->
-
-    <!-- コンテキストメニュー -->
-    <div id="context-menu" class="context-menu" style="display: none;">
-        <ul>
-            <li data-action="change-color">色変更</li>
-            <li data-action="edit-name">名前編集</li>
-            <li data-action="toggle-mixing">連続撹拌</li>
-            <li data-action="toggle-rapid-fill">早充依頼</li>
-            <li data-action="toggle-special-transfer">特急移庫</li>
+        <!-- サイドバーメニュー -->
+        <ul class="sidebar-menu">
+            <li class="menu-item">
+                <a href="{% url 'schedule_manager:index' %}">
+                    <i class="fa fa-calendar"></i>
+                    <span class="menu-text">生産予定表</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'schedule_manager:import_csv' %}">
+                    <i class="fa fa-upload"></i>
+                    <span class="menu-text">予定表CSV</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'inventory:index' %}">
+                    <i class="fa fa-box"></i>
+                    <span class="menu-text">在庫管理</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'inventory:product_list' %}">
+                    <i class="fa fa-clipboard-list"></i>
+                    <span class="menu-text">製品一覧</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'inventory:material_list' %}">
+                    <i class="fa fa-toolbox"></i>
+                    <span class="menu-text">材料一覧</span>
+                </a>
+            </li>
+            <li class="menu-item">
+                <a href="{% url 'inventory:bom_list' %}">
+                    <i class="fa fa-sitemap"></i>
+                    <span class="menu-text">BOM一覧</span>
+                </a>
+            </li>
         </ul>
     </div>
-
-    <!-- 色選択モーダル -->
-    <div id="color-picker-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>色を選択</h3>
-                <span class="close">&times;</span>
+    
+    <!-- メインコンテンツ -->
+    <div id="main-content" class="main-content">     
+        <div class="container-flex">
+            <!-- 左カラム -->
+            <div class="board-column">            
+                <!-- 左ボード -->
+                <div id="board-left" class="production-side">
+                    <div class="date-header">
+                        <h4 id="left-date">日付を選択してください</h4>
+                        <span class="fa fa-calendar calendar-icon" id="left-calendar-trigger"></span>
+                    </div>
+                    <!-- ボード内のレイアウト分割 -->
+                    <div class="board-layout">
+                        <!-- 左側（上下2段エリア） -->
+                        <div class="layout-left">
+                            <!-- 上段横長エリア -->
+                            <div class="area-horizontal area-top">
+                                <div class="area-content">
+                                    <!-- ラインコンテナがJSで挿入される -->
+                                </div>
+                            </div>
+                            
+                            <!-- 下段横長エリア -->
+                            <div class="area-horizontal area-bottom">
+                                <div class="area-content">
+                                    <!-- ラインコンテナがJSで挿入される -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 右側（縦長エリア） -->
+                        <div class="layout-right">
+                            <!-- 右側縦長エリア -->
+                            <div class="area-vertical area-right">
+                                <div class="area-content">
+                                    <!-- ラインコンテナがJSで挿入される -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- ここで左カラムが終わる -->
+            
+            <!-- 右カラム -->
+            <div class="board-column">
+                <!-- 右ボード -->
+                <div id="board-right" class="production-side">
+                    <div class="date-header">
+                        <h4 id="right-date">日付を選択してください</h4>
+                        <span class="fa fa-calendar calendar-icon" id="right-calendar-trigger"></span>
+                    </div>
+                    <!-- ボード内のレイアウト分割 (右側も同様) -->
+                    <div class="board-layout">
+                        <!-- 左側（上下2段エリア） -->
+                        <div class="layout-left">
+                            <!-- 上段横長エリア -->
+                            <div class="area-horizontal area-top">
+                                <div class="area-content">
+                                    <!-- ラインコンテナがJSで挿入される -->
+                                </div>
+                            </div>
+                            
+                            <!-- 下段横長エリア -->
+                            <div class="area-horizontal area-bottom">
+                                <div class="area-content">
+                                    <!-- ラインコンテナがJSで挿入される -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 右側（縦長エリア） -->
+                        <div class="layout-right">
+                            <!-- 右側縦長エリア -->
+                            <div class="area-vertical area-right">
+                                <div class="area-content">
+                                    <!-- ラインコンテナがJSで挿入される -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="color-grid">
-                <!-- 色は動的に生成 -->
+        </div> <!-- container-flexの終了 -->
+
+        <!-- コンテキストメニュー -->
+        <div id="context-menu" class="context-menu" style="display: none;">
+            <ul>
+                <li data-action="change-color">色変更</li>
+                <li data-action="edit-name">名前編集</li>
+                <li data-action="toggle-mixing">連続撹拌</li>
+                <li data-action="toggle-rapid-fill">早充依頼</li>
+                <li data-action="toggle-special-transfer">特急移庫</li>
+            </ul>
+        </div>
+
+        <!-- 色選択モーダル -->
+        <div id="color-picker-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>色を選択</h3>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="color-grid">
+                    <!-- 色は動的に生成 -->
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- 名前編集モーダル -->
-    <div id="edit-name-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>製品名編集</h3>
-                <span class="close">&times;</span>
-            </div>
-            <div class="modal-body">
-                <input type="text" id="product-name-input" class="form-control">
-                <input type="hidden" id="edit-card-id">
-                <div class="modal-actions">
-                    <button id="save-name" class="btn btn-primary">保存</button>
-                    <button class="btn btn-secondary close-modal">キャンセル</button>
+        <!-- 名前編集モーダル -->
+        <div id="edit-name-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>製品名編集</h3>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="product-name-input" class="form-control">
+                    <input type="hidden" id="edit-card-id">
+                    <div class="modal-actions">
+                        <button id="save-name" class="btn btn-primary">保存</button>
+                        <button class="btn btn-secondary close-modal">キャンセル</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- jQuery & jQuery UI -->
-    <script src="{% static 'js/jquery.js' %}"></script>
-    <script src="{% static 'js/jquery-ui.js' %}"></script>
+<!-- jQuery & jQuery UI -->
+<script src="{% static 'js/jquery.js' %}"></script>
+<script src="{% static 'js/jquery-ui.js' %}"></script>
 
-    <!-- サイドバー操作JavaScript -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const sidebar = document.getElementById('sidebar');
-        const sidebarToggle = document.getElementById('sidebar-toggle');
-        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+<!-- アプリケーションスクリプト -->
+<script src="{% static 'schedule_manager/js/schedule_board.js' %}"></script>
+<script src="{% static 'schedule_manager/js/product_cards.js' %}"></script>
+<script src="{% static 'schedule_manager/js/schedule_manager_utils.js' %}"></script>
+<script src="{% static 'schedule_manager/js/datepicker.js' %}"></script>
+<script src="{% static 'schedule_manager/js/schedule_debug_helper.js' %}"></script>
+
+<!-- サイドバー管理用JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    
+    // サイドバーの状態を切り替え
+    sidebarToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('expanded');
         
-        // サイドバーの状態を切り替え
-        sidebarToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('expanded');
-            
-            // 状態を保存（オプション）
-            if (sidebar.classList.contains('expanded')) {
-                localStorage.setItem('sidebarState', 'expanded');
-            } else {
-                localStorage.setItem('sidebarState', 'collapsed');
-            }
-        });
-        
-        // 背景クリックでサイドバーを閉じる
-        sidebarBackdrop.addEventListener('click', function() {
+        // 状態を保存（オプション）
+        if (sidebar.classList.contains('expanded')) {
+            localStorage.setItem('sidebarState', 'expanded');
+        } else {
+            localStorage.setItem('sidebarState', 'collapsed');
+        }
+    });
+    
+    // 保存された状態を復元（オプション）
+    const savedState = localStorage.getItem('sidebarState');
+    if (savedState === 'expanded') {
+        sidebar.classList.add('expanded');
+    }
+    
+    // 現在のページに対応するメニューをアクティブに
+    const currentPath = window.location.pathname;
+    document.querySelectorAll('.sidebar-menu .menu-item a').forEach(link => {
+        if (currentPath.includes(link.getAttribute('href'))) {
+            link.closest('.menu-item').classList.add('active');
+        }
+    });
+    
+    // ESCキーでサイドバーを閉じる
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && sidebar.classList.contains('expanded')) {
             sidebar.classList.remove('expanded');
             localStorage.setItem('sidebarState', 'collapsed');
-        });
-        
-        // 保存された状態を復元（オプション）
-        const savedState = localStorage.getItem('sidebarState');
-        if (savedState === 'expanded') {
-            sidebar.classList.add('expanded');
         }
-        
-        // 現在のページに対応するメニューをアクティブに
-        const currentPath = window.location.pathname;
-        document.querySelectorAll('.sidebar-menu .menu-item a').forEach(link => {
-            if (currentPath.includes(link.getAttribute('href'))) {
-                link.closest('.menu-item').classList.add('active');
-            }
-        });
-        
-        // ESCキーでサイドバーを閉じる
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && sidebar.classList.contains('expanded')) {
-                sidebar.classList.remove('expanded');
-                localStorage.setItem('sidebarState', 'collapsed');
-            }
-        });
     });
-    </script>
-
-    <!-- アプリケーションスクリプト -->
-    <script src="{% static 'schedule_manager/js/schedule_board.js' %}"></script>
-    <script src="{% static 'schedule_manager/js/product_cards.js' %}"></script>
-    <script src="{% static 'schedule_manager/js/schedule_manager_utils.js' %}"></script>
-    <script src="{% static 'schedule_manager/js/datepicker.js' %}"></script>
-</body>
-</html>
+});
+</script>
